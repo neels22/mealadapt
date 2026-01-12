@@ -2,12 +2,19 @@
 SQLModel table definitions for PostgreSQL database.
 All database tables are defined here with their relationships.
 """
+import os
 from datetime import datetime
 from typing import Optional, List
 from enum import Enum
 from uuid import uuid4
 from sqlmodel import SQLModel, Field, Relationship
+from dotenv import load_dotenv
 import json
+
+load_dotenv()
+
+# Schema configuration - matches database.py
+SCHEMA_NAME = os.getenv("DB_SCHEMA", "mealadapt")
 
 
 # ============== Enums ==============
@@ -41,6 +48,7 @@ class MealType(str, Enum):
 class User(SQLModel, table=True):
     """User account table"""
     __tablename__ = "users"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
     email: str = Field(unique=True, index=True)
@@ -63,9 +71,10 @@ class User(SQLModel, table=True):
 class FamilyMember(SQLModel, table=True):
     """Family member table"""
     __tablename__ = "family_members"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
-    user_id: Optional[str] = Field(default=None, foreign_key="users.id", index=True)
+    user_id: Optional[str] = Field(default=None, foreign_key=f"{SCHEMA_NAME}.users.id", index=True)
     name: str
     avatar: str = Field(default="😊")
     role: Role = Field(default=Role.ADULT)
@@ -100,9 +109,10 @@ class FamilyMember(SQLModel, table=True):
 class HealthCondition(SQLModel, table=True):
     """Health conditions for family members"""
     __tablename__ = "health_conditions"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    member_id: str = Field(foreign_key="family_members.id", index=True)
+    member_id: str = Field(foreign_key=f"{SCHEMA_NAME}.family_members.id", index=True)
     condition_type: ConditionType
     enabled: bool = Field(default=False)
     notes: Optional[str] = None
@@ -116,9 +126,10 @@ class HealthCondition(SQLModel, table=True):
 class PantryItem(SQLModel, table=True):
     """Pantry items table"""
     __tablename__ = "pantry_items"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: Optional[str] = Field(default=None, foreign_key="users.id", index=True)
+    user_id: Optional[str] = Field(default=None, foreign_key=f"{SCHEMA_NAME}.users.id", index=True)
     name: str
     category: Optional[str] = None
     added_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
@@ -132,9 +143,10 @@ class PantryItem(SQLModel, table=True):
 class SavedRecipe(SQLModel, table=True):
     """Saved recipes table"""
     __tablename__ = "saved_recipes"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
-    user_id: str = Field(foreign_key="users.id", index=True)
+    user_id: str = Field(foreign_key=f"{SCHEMA_NAME}.users.id", index=True)
     dish_name: str
     recipe_text: Optional[str] = None
     analysis_json: Optional[str] = None  # JSON string
@@ -161,9 +173,10 @@ class SavedRecipe(SQLModel, table=True):
 class RecipeTag(SQLModel, table=True):
     """Tags for saved recipes"""
     __tablename__ = "recipe_tags"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    recipe_id: str = Field(foreign_key="saved_recipes.id", index=True)
+    recipe_id: str = Field(foreign_key=f"{SCHEMA_NAME}.saved_recipes.id", index=True)
     tag: str
     
     # Relationships
@@ -175,9 +188,10 @@ class RecipeTag(SQLModel, table=True):
 class ShoppingList(SQLModel, table=True):
     """Shopping lists table"""
     __tablename__ = "shopping_lists"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
-    user_id: str = Field(foreign_key="users.id", index=True)
+    user_id: str = Field(foreign_key=f"{SCHEMA_NAME}.users.id", index=True)
     name: str
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
@@ -190,9 +204,10 @@ class ShoppingList(SQLModel, table=True):
 class ShoppingItem(SQLModel, table=True):
     """Items in shopping lists"""
     __tablename__ = "shopping_items"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    list_id: str = Field(foreign_key="shopping_lists.id", index=True)
+    list_id: str = Field(foreign_key=f"{SCHEMA_NAME}.shopping_lists.id", index=True)
     ingredient: str
     quantity: Optional[str] = None
     category: Optional[str] = None
@@ -208,9 +223,10 @@ class ShoppingItem(SQLModel, table=True):
 class MealPlan(SQLModel, table=True):
     """Weekly meal plans table"""
     __tablename__ = "meal_plans"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
-    user_id: str = Field(foreign_key="users.id", index=True)
+    user_id: str = Field(foreign_key=f"{SCHEMA_NAME}.users.id", index=True)
     week_start: str  # DATE as YYYY-MM-DD string
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
@@ -222,10 +238,11 @@ class MealPlan(SQLModel, table=True):
 class PlannedMeal(SQLModel, table=True):
     """Planned meals within a meal plan"""
     __tablename__ = "planned_meals"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    plan_id: str = Field(foreign_key="meal_plans.id", index=True)
-    recipe_id: Optional[str] = Field(default=None, foreign_key="saved_recipes.id")
+    plan_id: str = Field(foreign_key=f"{SCHEMA_NAME}.meal_plans.id", index=True)
+    recipe_id: Optional[str] = Field(default=None, foreign_key=f"{SCHEMA_NAME}.saved_recipes.id")
     date: str  # DATE as YYYY-MM-DD string
     meal_type: str  # MealType value
     servings: int = Field(default=1)
@@ -241,6 +258,7 @@ class PlannedMeal(SQLModel, table=True):
 class BarcodeCache(SQLModel, table=True):
     """Barcode product data cache"""
     __tablename__ = "barcode_cache"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     barcode: str = Field(primary_key=True)
     product_data: str  # JSON string
@@ -260,9 +278,10 @@ class BarcodeCache(SQLModel, table=True):
 class RefreshToken(SQLModel, table=True):
     """Refresh tokens for JWT authentication"""
     __tablename__ = "refresh_tokens"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     jti: str = Field(primary_key=True)  # JWT ID
-    user_id: str = Field(foreign_key="users.id", index=True)
+    user_id: str = Field(foreign_key=f"{SCHEMA_NAME}.users.id", index=True)
     expires_at: datetime
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
@@ -273,6 +292,7 @@ class RefreshToken(SQLModel, table=True):
 class BlacklistedToken(SQLModel, table=True):
     """Blacklisted/revoked tokens"""
     __tablename__ = "blacklisted_tokens"
+    __table_args__ = {"schema": SCHEMA_NAME}
     
     jti: str = Field(primary_key=True)  # JWT ID
     token_type: str  # "access" or "refresh"
