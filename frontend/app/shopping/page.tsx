@@ -446,6 +446,20 @@ function GenerateListModal({
     loadRecipes();
   }, []);
 
+  // Generate default name when no custom name and recipes are selected
+  const getListName = () => {
+    if (name.trim()) return name.trim();
+    if (selectedIds.size === 0) return '';
+    
+    const selectedRecipes = recipes.filter(r => selectedIds.has(r.id));
+    if (selectedRecipes.length === 1) {
+      return `${selectedRecipes[0].dish_name} Shopping`;
+    }
+    return `Shopping List (${selectedRecipes.length} recipes)`;
+  };
+
+  const effectiveName = getListName();
+
   const loadRecipes = async () => {
     try {
       const response = await api.getSavedRecipes();
@@ -468,12 +482,12 @@ function GenerateListModal({
   };
 
   const handleGenerate = async () => {
-    if (!name.trim() || selectedIds.size === 0) return;
+    if (!effectiveName || selectedIds.size === 0) return;
     
     setGenerating(true);
     try {
       const list = await api.generateShoppingList({
-        name: name.trim(),
+        name: effectiveName,
         recipe_ids: Array.from(selectedIds)
       });
       onGenerate(list);
@@ -494,7 +508,7 @@ function GenerateListModal({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="List name"
+          placeholder={selectedIds.size > 0 ? effectiveName : "List name (auto-generated if empty)"}
           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--accent-green)] mb-4"
         />
 
@@ -543,7 +557,7 @@ function GenerateListModal({
           </button>
           <button 
             onClick={handleGenerate} 
-            disabled={generating || !name.trim() || selectedIds.size === 0}
+            disabled={generating || selectedIds.size === 0}
             className="btn-primary flex-1 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {generating ? (
