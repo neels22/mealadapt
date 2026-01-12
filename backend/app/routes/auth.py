@@ -1,19 +1,22 @@
-from fastapi import APIRouter, HTTPException, Depends, status
-from app.models.user import UserCreate, UserLogin, UserUpdate, UserPasswordUpdate, User, Token
+from fastapi import APIRouter, HTTPException, Depends, status, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from app.models.user import UserCreate, UserLogin, UserUpdate, UserPasswordUpdate, User, Token, RefreshTokenRequest
 from app.services.auth_service import auth_service
 from app.middleware.auth import get_current_user_required
 
 router = APIRouter()
+security = HTTPBearer()
 
 
 @router.post("/register", response_model=dict)
 async def register(user_data: UserCreate):
-    """Register a new user account"""
+    """Register a new user account and return access + refresh tokens"""
     try:
         result = await auth_service.register_user(user_data)
         return {
             "user": result["user"].model_dump(),
             "access_token": result["access_token"],
+            "refresh_token": result["refresh_token"],
             "token_type": result["token_type"]
         }
     except ValueError as e:
@@ -30,7 +33,7 @@ async def register(user_data: UserCreate):
 
 @router.post("/login", response_model=dict)
 async def login(credentials: UserLogin):
-    """Login with email and password"""
+    """Login with email and password, returns access + refresh tokens"""
     result = await auth_service.authenticate_user(
         email=credentials.email,
         password=credentials.password
@@ -46,17 +49,45 @@ async def login(credentials: UserLogin):
     return {
         "user": result["user"].model_dump(),
         "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
+        "token_type": result["token_type"]
+    }
+
+
+@router.post("/refresh", response_model=dict)
+async def refresh_tokens(request: RefreshTokenRequest):
+    """
+    Get new access and refresh tokens using a valid refresh token.
+    The old refresh token is invalidated (token rotation).
+    """
+    result = await auth_service.refresh_tokens(request.refresh_token)
+    
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return {
+        "user": result["user"].model_dump(),
+        "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
         "token_type": result["token_type"]
     }
 
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user_required)):
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    current_user: User = Depends(get_current_user_required)
+):
     """
     Logout the current user.
-    Note: Since we're using stateless JWT, the client should discard the token.
-    This endpoint exists for API completeness and future session invalidation.
+    Blacklists the access token and invalidates all refresh tokens.
     """
+    access_token = credentials.credentials
+    await auth_service.revoke_tokens(access_token, current_user.id)
     return {"message": "Successfully logged out"}
 
 

@@ -45,5 +45,19 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class TokenPair(BaseModel):
+    """Response model containing both access and refresh tokens"""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
 class TokenData(BaseModel):
     user_id: Optional[str] = None
+    jti: Optional[str] = None
+    token_type: Optional[str] = None  # "access" or "refresh"
+
+
+class RefreshTokenRequest(BaseModel):
+    """Request model for refreshing tokens"""
+    refresh_token: str

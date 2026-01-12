@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, LoginCredentials, RegisterData } from '@/lib/types';
-import { api, getToken, removeToken } from '@/lib/api';
+import { api, getToken, getRefreshToken, removeAllTokens } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -22,16 +22,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
+      // Check if we have any tokens
       const token = getToken();
-      if (!token) {
+      const refreshToken = getRefreshToken();
+      if (!token && !refreshToken) {
         setUser(null);
         return;
       }
+      // getCurrentUser will automatically try to refresh if access token is expired
       const currentUser = await api.getCurrentUser();
       setUser(currentUser);
     } catch {
       setUser(null);
-      removeToken();
+      removeAllTokens();
     }
   }, []);
 

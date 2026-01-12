@@ -136,6 +136,26 @@ async def init_db():
             )
         """)
         
+        # Create refresh_tokens table for JWT refresh token management
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS refresh_tokens (
+                jti TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create blacklisted_tokens table for revoked tokens
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS blacklisted_tokens (
+                jti TEXT PRIMARY KEY,
+                token_type TEXT NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                blacklisted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
         # Migration: Add user_id column to existing tables if they don't have it
         # Check and add user_id to family_members
         cursor = await db.execute("PRAGMA table_info(family_members)")
@@ -1115,5 +1135,89 @@ async def set_barcode_cache(barcode: str, product_data: dict) -> None:
             """INSERT OR REPLACE INTO barcode_cache (barcode, product_data, cached_at)
                VALUES (?, ?, CURRENT_TIMESTAMP)""",
             (barcode, json.dumps(product_data))
+        )
+        await db.commit()
+
+
+# Refresh token functions
+async def store_refresh_token(jti: str, user_id: str, expires_at: str) -> None:
+    """Store a refresh token in the database"""
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute(
+            """INSERT INTO refresh_tokens (jti, user_id, expires_at)
+               VALUES (?, ?, ?)""",
+            (jti, user_id, expires_at)
+        )
+        await db.commit()
+
+
+async def get_refresh_token(jti: str) -> Optional[dict]:
+    """Get a refresh token by its JTI"""
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM refresh_tokens WHERE jti = ?",
+            (jti,)
+        )
+        row = await cursor.fetchone()
+        if row:
+            return dict(row)
+        return None
+
+
+async def delete_refresh_token(jti: str) -> bool:
+    """Delete a refresh token (used during token rotation)"""
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        cursor = await db.execute(
+            "DELETE FROM refresh_tokens WHERE jti = ?",
+            (jti,)
+        )
+        await db.commit()
+        return cursor.rowcount > 0
+
+
+async def delete_user_refresh_tokens(user_id: str) -> None:
+    """Delete all refresh tokens for a user (used during logout)"""
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute(
+            "DELETE FROM refresh_tokens WHERE user_id = ?",
+            (user_id,)
+        )
+        await db.commit()
+
+
+# Token blacklist functions
+async def blacklist_token(jti: str, token_type: str, expires_at: str) -> None:
+    """Add a token to the blacklist"""
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute(
+            """INSERT OR IGNORE INTO blacklisted_tokens (jti, token_type, expires_at)
+               VALUES (?, ?, ?)""",
+            (jti, token_type, expires_at)
+        )
+        await db.commit()
+
+
+async def is_token_blacklisted(jti: str) -> bool:
+    """Check if a token is blacklisted"""
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        cursor = await db.execute(
+            "SELECT jti FROM blacklisted_tokens WHERE jti = ?",
+            (jti,)
+        )
+        row = await cursor.fetchone()
+        return row is not None
+
+
+async def cleanup_expired_tokens() -> None:
+    """Remove expired tokens from refresh_tokens and blacklisted_tokens tables"""
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        # Clean up expired refresh tokens
+        await db.execute(
+            "DELETE FROM refresh_tokens WHERE expires_at < CURRENT_TIMESTAMP"
+        )
+        # Clean up expired blacklisted tokens (no longer need to track them)
+        await db.execute(
+            "DELETE FROM blacklisted_tokens WHERE expires_at < CURRENT_TIMESTAMP"
         )
         await db.commit()
