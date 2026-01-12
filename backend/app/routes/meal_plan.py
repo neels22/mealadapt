@@ -16,7 +16,7 @@ from app.models.meal_plan import (
 )
 from app.models.shopping import ShoppingListResponse, ShoppingItem
 from app import crud
-from app.services.ai_service import ai_service
+from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInvalidOutput
 from app.middleware.auth import get_current_user
 from app.models.user import User
 from app.database import get_session
@@ -205,5 +205,13 @@ async def generate_shopping_from_plan(
             ],
             created_at=str(shopping_list.created_at) if shopping_list.created_at else None
         )
+    except AIOutOfScope as e:
+        raise HTTPException(status_code=400, detail={"error": "out_of_scope", "message": str(e)})
+    except AIBlocked as e:
+        raise HTTPException(status_code=422, detail={"error": "blocked", "message": str(e)})
+    except AIInvalidOutput as e:
+        raise HTTPException(status_code=502, detail={"error": "invalid_model_output", "message": str(e)})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate shopping list: {str(e)}")

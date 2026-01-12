@@ -1,13 +1,12 @@
 """
 Image scanning and ingredient label analysis routes.
 """
-import base64
 import json
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.ai_service import ai_service
+from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInvalidOutput
 from app import crud
 from app.models.family import FamilyProfile
 from app.models.user import User
@@ -75,19 +74,21 @@ async def analyze_ingredient_label(
                 detail="Please add family members first before scanning ingredients"
             )
         
-        # Encode to base64 for Gemini
-        image_base64 = base64.standard_b64encode(image_data).decode("utf-8")
-        
         # Analyze with Gemini Vision
         result = ai_service.analyze_ingredient_image(
-            image_data=image_base64,
+            image_data=image_data,
             family_profile=family_profile,
             mime_type=file.content_type or "image/jpeg"
         )
         
         return result
-        
+    except AIOutOfScope as e:
+        raise HTTPException(status_code=400, detail={"error": "out_of_scope", "message": str(e)})
+    except AIBlocked as e:
+        raise HTTPException(status_code=422, detail={"error": "blocked", "message": str(e)})
+    except AIInvalidOutput as e:
+        raise HTTPException(status_code=502, detail={"error": "invalid_model_output", "message": str(e)})
     except ValueError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to analyze image: {str(e)}")

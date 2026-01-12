@@ -7,7 +7,7 @@ from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.barcode_service import barcode_service
-from app.services.ai_service import ai_service
+from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInvalidOutput
 from app.middleware.auth import get_current_user
 from app.database import get_session
 
@@ -167,6 +167,14 @@ async def analyze_barcode(
             safe_for_all=analysis.get("safe_for_all", []),
             recommendations=analysis.get("recommendations", [])
         )
+    except AIOutOfScope as e:
+        raise HTTPException(status_code=400, detail={"error": "out_of_scope", "message": str(e)})
+    except AIBlocked as e:
+        raise HTTPException(status_code=422, detail={"error": "blocked", "message": str(e)})
+    except AIInvalidOutput as e:
+        raise HTTPException(status_code=502, detail={"error": "invalid_model_output", "message": str(e)})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=500,

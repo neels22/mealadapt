@@ -7,7 +7,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud
-from app.services.ai_service import ai_service
+from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInvalidOutput
 from app.models.user import User
 from app.models.family import FamilyMember, HealthCondition
 from app.middleware.auth import get_current_user
@@ -137,5 +137,13 @@ async def suggest_recipes(
             family_profile=family_profile
         )
         return result
+    except AIOutOfScope as e:
+        raise HTTPException(status_code=400, detail={"error": "out_of_scope", "message": str(e)})
+    except AIBlocked as e:
+        raise HTTPException(status_code=422, detail={"error": "blocked", "message": str(e)})
+    except AIInvalidOutput as e:
+        raise HTTPException(status_code=502, detail={"error": "invalid_model_output", "message": str(e)})
     except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
