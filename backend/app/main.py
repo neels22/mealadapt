@@ -1,0 +1,59 @@
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
+
+from app.routes import family, recipe, scan, pantry, auth, saved_recipes, shopping, meal_plan, barcode
+from app.database import init_db
+
+load_dotenv()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Initialize database
+    await init_db()
+    yield
+    # Shutdown: cleanup if needed
+    pass
+
+
+app = FastAPI(
+    title="MainMeal API",
+    description="AI-powered recipe adaptation for family dietary needs",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# CORS Configuration
+origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(family.router, prefix="/api/family", tags=["Family"])
+app.include_router(recipe.router, prefix="/api/recipe", tags=["Recipe"])
+app.include_router(saved_recipes.router, prefix="/api/recipes", tags=["Saved Recipes"])
+app.include_router(shopping.router, prefix="/api/shopping", tags=["Shopping"])
+app.include_router(meal_plan.router, prefix="/api/meal-plans", tags=["Meal Plans"])
+app.include_router(barcode.router, prefix="/api/barcode", tags=["Barcode"])
+app.include_router(scan.router, prefix="/api/scan", tags=["Scan"])
+app.include_router(pantry.router, prefix="/api/pantry", tags=["Pantry"])
+
+
+@app.get("/")
+async def root():
+    return {"message": "MainMeal API is running", "version": "1.0.0"}
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
