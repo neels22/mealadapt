@@ -1,10 +1,18 @@
+"""
+Pantry management routes.
+"""
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
-from app import database as db
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import crud
 from app.services.ai_service import ai_service
 from app.models.user import User
+from app.models.family import FamilyMember, HealthCondition
 from app.middleware.auth import get_current_user
+from app.database import get_session
+import json
 
 router = APIRouter()
 
@@ -20,62 +28,108 @@ class PantryItemResponse(BaseModel):
     category: Optional[str] = None
 
 
-@router.get("/items", response_model=List[dict])
-async def get_pantry_items(current_user: Optional[User] = Depends(get_current_user)):
+def member_to_dict(member) -> dict:
+    """Convert SQLModel FamilyMember to dict for AI service"""
+    conditions = [
+        {
+            "type": cond.condition_type.value,
+            "enabled": cond.enabled,
+            "notes": cond.notes
+        }
+        for cond in member.conditions
+    ]
+    
+    custom_restrictions = []
+    if member.custom_restrictions:
+        custom_restrictions = json.loads(member.custom_restrictions)
+    
+    preferences = None
+    if member.preferences:
+        preferences = json.loads(member.preferences)
+    
+    return {
+        "id": member.id,
+        "name": member.name,
+        "avatar": member.avatar,
+        "role": member.role.value,
+        "conditions": conditions,
+        "custom_restrictions": custom_restrictions,
+        "preferences": preferences
+    }
+
+
+@router.get("/items", response_model=List[PantryItemResponse])
+async def get_pantry_items(
+    current_user: Optional[User] = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
     """Get all pantry items"""
     user_id = current_user.id if current_user else None
-    return await db.get_pantry_items(user_id=user_id)
+    items = await crud.get_pantry_items(session, user_id=user_id)
+    return [
+        PantryItemResponse(id=item.id, name=item.name, category=item.category)
+        for item in items
+    ]
 
 
-@router.post("/items", response_model=dict)
+@router.post("/items", response_model=PantryItemResponse)
 async def add_pantry_item(
     item: PantryItemCreate,
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """Add an item to the pantry"""
     user_id = current_user.id if current_user else None
-    return await db.add_pantry_item(item.name, item.category, user_id=user_id)
+    new_item = await crud.add_pantry_item(session, item.name, item.category, user_id=user_id)
+    return PantryItemResponse(id=new_item.id, name=new_item.name, category=new_item.category)
 
 
 @router.delete("/items/{item_id}")
 async def delete_pantry_item(
     item_id: int,
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """Delete a pantry item"""
     user_id = current_user.id if current_user else None
-    deleted = await db.delete_pantry_item(item_id, user_id=user_id)
+    deleted = await crud.delete_pantry_item(session, item_id, user_id=user_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Item not found")
     return {"message": "Item deleted successfully"}
 
 
 @router.delete("/items")
-async def clear_pantry(current_user: Optional[User] = Depends(get_current_user)):
+async def clear_pantry(
+    current_user: Optional[User] = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
     """Clear all pantry items"""
     user_id = current_user.id if current_user else None
-    await db.clear_pantry(user_id=user_id)
+    await crud.clear_pantry(session, user_id=user_id)
     return {"message": "Pantry cleared"}
 
 
 @router.post("/suggest-recipes")
-async def suggest_recipes(current_user: Optional[User] = Depends(get_current_user)):
+async def suggest_recipes(
+    current_user: Optional[User] = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
     """Suggest recipes based on pantry ingredients and family profile"""
     user_id = current_user.id if current_user else None
     
     # Get pantry items
-    items = await db.get_pantry_items(user_id=user_id)
+    items = await crud.get_pantry_items(session, user_id=user_id)
     if not items:
         raise HTTPException(
             status_code=400,
             detail="Add some ingredients to your pantry first"
         )
     
-    ingredients = [item["name"] for item in items]
+    ingredients = [item.name for item in items]
     
     # Get family profile
-    members = await db.get_all_members(user_id=user_id)
-    family_profile = {"members": [m.model_dump() for m in members]}
+    members = await crud.get_all_members(session, user_id=user_id)
+    family_profile = {"members": [member_to_dict(m) for m in members]}
     
     try:
         result = ai_service.suggest_recipes_from_ingredients(

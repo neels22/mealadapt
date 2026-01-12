@@ -1,3 +1,7 @@
+"""
+MainMeal API - AI-powered recipe adaptation for family dietary needs.
+FastAPI application with PostgreSQL backend using SQLModel.
+"""
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,18 +9,19 @@ from dotenv import load_dotenv
 import os
 
 from app.routes import family, recipe, scan, pantry, auth, saved_recipes, shopping, meal_plan, barcode
-from app.database import init_db
+from app.database import init_db, close_db
 
 load_dotenv()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Application lifespan - startup and shutdown events"""
     # Startup: Initialize database
     await init_db()
     yield
-    # Shutdown: cleanup if needed
-    pass
+    # Shutdown: Close database connections
+    await close_db()
 
 
 app = FastAPI(

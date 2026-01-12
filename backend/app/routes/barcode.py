@@ -1,10 +1,15 @@
+"""
+Barcode lookup and product analysis routes.
+"""
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.barcode_service import barcode_service
 from app.services.ai_service import ai_service
 from app.middleware.auth import get_current_user
+from app.database import get_session
 
 router = APIRouter()
 
@@ -56,10 +61,11 @@ class BarcodeAnalysisResponse(BaseModel):
 @router.get("/{barcode}", response_model=BarcodeProductResponse)
 async def lookup_barcode(
     barcode: str,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """Look up a product by barcode"""
-    product = await barcode_service.lookup_product(barcode)
+    product = await barcode_service.lookup_product(session, barcode)
     
     if not product:
         raise HTTPException(
@@ -89,11 +95,12 @@ async def lookup_barcode(
 async def analyze_barcode(
     barcode: str,
     family_profile: dict,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """Analyze a product's ingredients against family profile"""
     # Get product info
-    product = await barcode_service.lookup_product(barcode)
+    product = await barcode_service.lookup_product(session, barcode)
     
     if not product:
         raise HTTPException(

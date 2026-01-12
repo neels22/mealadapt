@@ -1,3 +1,7 @@
+"""
+Authentication service with JWT token management.
+Updated to work with SQLModel and async sessions.
+"""
 import os
 import uuid
 from datetime import datetime, timedelta
@@ -6,13 +10,11 @@ from typing import Optional, Tuple
 import bcrypt
 from jose import JWTError, jwt
 from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import UserCreate, User, Token, TokenData, TokenPair
-from app.database import (
-    create_user, get_user_by_email, get_user_by_id, update_user, delete_user,
-    store_refresh_token, get_refresh_token, delete_refresh_token, 
-    delete_user_refresh_tokens, blacklist_token, is_token_blacklisted
-)
+from app.models.tables import User as UserModel
+from app import crud
 
 load_dotenv()
 
@@ -59,7 +61,7 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt, jti
     
-    async def create_refresh_token(self, user_id: str) -> Tuple[str, str]:
+    async def create_refresh_token(self, session: AsyncSession, user_id: str) -> Tuple[str, str]:
         """Create a JWT refresh token and store it in DB. Returns (token, jti)"""
         jti = str(uuid.uuid4())
         expire = datetime.utcnow() + self.refresh_token_expire
@@ -73,14 +75,14 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         
         # Store refresh token in database
-        await store_refresh_token(jti, user_id, expire.isoformat())
+        await crud.store_refresh_token(session, jti, user_id, expire.isoformat())
         
         return encoded_jwt, jti
     
-    async def create_token_pair(self, user_id: str) -> dict:
+    async def create_token_pair(self, session: AsyncSession, user_id: str) -> dict:
         """Create both access and refresh tokens"""
         access_token, access_jti = self.create_access_token(user_id)
-        refresh_token, refresh_jti = await self.create_refresh_token(user_id)
+        refresh_token, refresh_jti = await self.create_refresh_token(session, user_id)
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
@@ -107,22 +109,27 @@ class AuthService:
         except JWTError:
             return None
     
-    async def decode_and_validate_token(self, token: str, expected_type: str = "access") -> Optional[TokenData]:
+    async def decode_and_validate_token(
+        self,
+        session: AsyncSession,
+        token: str,
+        expected_type: str = "access"
+    ) -> Optional[TokenData]:
         """Decode token and check if it's blacklisted"""
         token_data = self.decode_token(token, expected_type)
         if token_data is None:
             return None
         
         # Check if token is blacklisted
-        if token_data.jti and await is_token_blacklisted(token_data.jti):
+        if token_data.jti and await crud.is_token_blacklisted(session, token_data.jti):
             return None
         
         return token_data
     
-    async def register_user(self, user_data: UserCreate) -> dict:
+    async def register_user(self, session: AsyncSession, user_data: UserCreate) -> dict:
         """Register a new user"""
         # Check if email already exists
-        existing_user = await get_user_by_email(user_data.email)
+        existing_user = await crud.get_user_by_email(session, user_data.email)
         if existing_user:
             raise ValueError("Email already registered")
         
@@ -130,7 +137,8 @@ class AuthService:
         user_id = str(uuid.uuid4())
         password_hash = self.hash_password(user_data.password)
         
-        user = await create_user(
+        user = await crud.create_user(
+            session,
             user_id=user_id,
             email=user_data.email,
             password_hash=password_hash,
@@ -138,7 +146,7 @@ class AuthService:
         )
         
         # Generate token pair
-        tokens = await self.create_token_pair(user_id)
+        tokens = await self.create_token_pair(session, user_id)
         
         return {
             "user": User(id=user_id, email=user_data.email, name=user_data.name),
@@ -147,89 +155,99 @@ class AuthService:
             "token_type": "bearer"
         }
     
-    async def authenticate_user(self, email: str, password: str) -> Optional[dict]:
+    async def authenticate_user(
+        self,
+        session: AsyncSession,
+        email: str,
+        password: str
+    ) -> Optional[dict]:
         """Authenticate a user and return tokens if valid"""
-        user = await get_user_by_email(email)
+        user = await crud.get_user_by_email(session, email)
         if not user:
             return None
         
-        if not self.verify_password(password, user["password_hash"]):
+        if not self.verify_password(password, user.password_hash):
             return None
         
         # Generate token pair
-        tokens = await self.create_token_pair(user["id"])
+        tokens = await self.create_token_pair(session, user.id)
         
         return {
             "user": User(
-                id=user["id"],
-                email=user["email"],
-                name=user["name"],
-                created_at=user.get("created_at"),
-                updated_at=user.get("updated_at")
+                id=user.id,
+                email=user.email,
+                name=user.name,
+                created_at=user.created_at,
+                updated_at=user.updated_at
             ),
             "access_token": tokens["access_token"],
             "refresh_token": tokens["refresh_token"],
             "token_type": "bearer"
         }
     
-    async def get_current_user(self, token: str) -> Optional[User]:
+    async def get_current_user(self, session: AsyncSession, token: str) -> Optional[User]:
         """Get the current user from an access token"""
-        token_data = await self.decode_and_validate_token(token, expected_type="access")
+        token_data = await self.decode_and_validate_token(session, token, expected_type="access")
         if token_data is None or token_data.user_id is None:
             return None
         
-        user = await get_user_by_id(token_data.user_id)
+        user = await crud.get_user_by_id(session, token_data.user_id)
         if user is None:
             return None
         
         return User(
-            id=user["id"],
-            email=user["email"],
-            name=user["name"],
-            created_at=user.get("created_at"),
-            updated_at=user.get("updated_at")
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            created_at=user.created_at,
+            updated_at=user.updated_at
         )
     
-    async def refresh_tokens(self, refresh_token: str) -> Optional[dict]:
+    async def refresh_tokens(self, session: AsyncSession, refresh_token: str) -> Optional[dict]:
         """
         Refresh tokens using a valid refresh token.
         Implements token rotation - old refresh token is invalidated.
         """
         # Decode and validate the refresh token
-        token_data = await self.decode_and_validate_token(refresh_token, expected_type="refresh")
+        token_data = await self.decode_and_validate_token(session, refresh_token, expected_type="refresh")
         if token_data is None or token_data.user_id is None or token_data.jti is None:
             return None
         
         # Check if refresh token exists in database (not already used)
-        stored_token = await get_refresh_token(token_data.jti)
+        stored_token = await crud.get_refresh_token(session, token_data.jti)
         if stored_token is None:
             return None
         
         # Get user to ensure they still exist
-        user = await get_user_by_id(token_data.user_id)
+        user = await crud.get_user_by_id(session, token_data.user_id)
         if user is None:
             return None
         
         # Delete old refresh token (token rotation)
-        await delete_refresh_token(token_data.jti)
+        await crud.delete_refresh_token(session, token_data.jti)
         
         # Create new token pair
-        tokens = await self.create_token_pair(token_data.user_id)
+        tokens = await self.create_token_pair(session, token_data.user_id)
         
         return {
             "user": User(
-                id=user["id"],
-                email=user["email"],
-                name=user["name"],
-                created_at=user.get("created_at"),
-                updated_at=user.get("updated_at")
+                id=user.id,
+                email=user.email,
+                name=user.name,
+                created_at=user.created_at,
+                updated_at=user.updated_at
             ),
             "access_token": tokens["access_token"],
             "refresh_token": tokens["refresh_token"],
             "token_type": "bearer"
         }
     
-    async def revoke_tokens(self, access_token: str, user_id: str) -> bool:
+    async def revoke_tokens(
+        self,
+        session: AsyncSession,
+        access_token: str,
+        user_id: str
+    ) -> bool:
         """
         Revoke tokens during logout.
         Blacklists the access token and removes all refresh tokens for the user.
@@ -244,51 +262,63 @@ class AuthService:
                 exp = payload.get("exp")
                 if exp:
                     expire_dt = datetime.utcfromtimestamp(exp)
-                    await blacklist_token(token_data.jti, "access", expire_dt.isoformat())
+                    await crud.blacklist_token(session, token_data.jti, "access", expire_dt.isoformat())
             except JWTError:
                 pass
         
         # Delete all refresh tokens for this user
-        await delete_user_refresh_tokens(user_id)
+        await crud.delete_user_refresh_tokens(session, user_id)
         
         return True
     
-    async def update_user_profile(self, user_id: str, name: Optional[str] = None, email: Optional[str] = None) -> Optional[User]:
+    async def update_user_profile(
+        self,
+        session: AsyncSession,
+        user_id: str,
+        name: Optional[str] = None,
+        email: Optional[str] = None
+    ) -> Optional[User]:
         """Update user profile"""
         # If email is being changed, check it's not already taken
         if email:
-            existing = await get_user_by_email(email)
-            if existing and existing["id"] != user_id:
+            existing = await crud.get_user_by_email(session, email)
+            if existing and existing.id != user_id:
                 raise ValueError("Email already in use")
         
-        user = await update_user(user_id, name=name, email=email)
+        user = await crud.update_user(session, user_id, name=name, email=email)
         if user is None:
             return None
         
         return User(
-            id=user["id"],
-            email=user["email"],
-            name=user["name"],
-            created_at=user.get("created_at"),
-            updated_at=user.get("updated_at")
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            created_at=user.created_at,
+            updated_at=user.updated_at
         )
     
-    async def change_password(self, user_id: str, current_password: str, new_password: str) -> bool:
+    async def change_password(
+        self,
+        session: AsyncSession,
+        user_id: str,
+        current_password: str,
+        new_password: str
+    ) -> bool:
         """Change user password"""
-        user = await get_user_by_id(user_id)
+        user = await crud.get_user_by_id(session, user_id)
         if not user:
             return False
         
-        if not self.verify_password(current_password, user["password_hash"]):
+        if not self.verify_password(current_password, user.password_hash):
             raise ValueError("Current password is incorrect")
         
         new_hash = self.hash_password(new_password)
-        await update_user(user_id, password_hash=new_hash)
+        await crud.update_user(session, user_id, password_hash=new_hash)
         return True
     
-    async def delete_user_account(self, user_id: str) -> bool:
+    async def delete_user_account(self, session: AsyncSession, user_id: str) -> bool:
         """Delete a user account"""
-        return await delete_user(user_id)
+        return await crud.delete_user(session, user_id)
 
 
 # Singleton instance

@@ -1,19 +1,57 @@
+"""
+Image scanning and ingredient label analysis routes.
+"""
 import base64
+import json
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from typing import Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.services.ai_service import ai_service
-from app import database as db
+from app import crud
 from app.models.family import FamilyProfile
 from app.models.user import User
 from app.middleware.auth import get_current_user
+from app.database import get_session
 
 router = APIRouter()
+
+
+def member_to_dict(member) -> dict:
+    """Convert SQLModel FamilyMember to dict for AI service"""
+    conditions = [
+        {
+            "type": cond.condition_type.value,
+            "enabled": cond.enabled,
+            "notes": cond.notes
+        }
+        for cond in member.conditions
+    ]
+    
+    custom_restrictions = []
+    if member.custom_restrictions:
+        custom_restrictions = json.loads(member.custom_restrictions)
+    
+    preferences = None
+    if member.preferences:
+        preferences = json.loads(member.preferences)
+    
+    return {
+        "id": member.id,
+        "name": member.name,
+        "avatar": member.avatar,
+        "role": member.role.value,
+        "conditions": conditions,
+        "custom_restrictions": custom_restrictions,
+        "preferences": preferences
+    }
 
 
 @router.post("/analyze")
 async def analyze_ingredient_label(
     file: UploadFile = File(...),
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """
     Analyze an ingredient label image for family safety
@@ -28,8 +66,8 @@ async def analyze_ingredient_label(
         
         # Get family profile from database (filtered by user if authenticated)
         user_id = current_user.id if current_user else None
-        members = await db.get_all_members(user_id=user_id)
-        family_profile = {"members": [m.model_dump() for m in members]}
+        members = await crud.get_all_members(session, user_id=user_id)
+        family_profile = {"members": [member_to_dict(m) for m in members]}
         
         if not family_profile["members"]:
             raise HTTPException(

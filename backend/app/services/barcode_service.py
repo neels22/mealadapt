@@ -1,6 +1,12 @@
+"""
+Barcode lookup service using Open Food Facts API.
+Updated to work with SQLModel and async sessions.
+"""
 import httpx
 from typing import Optional
-from app.database import get_barcode_cache, set_barcode_cache
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import crud
 
 
 class BarcodeService:
@@ -8,15 +14,19 @@ class BarcodeService:
     
     OPEN_FOOD_FACTS_URL = "https://world.openfoodfacts.org/api/v2/product"
     
-    async def lookup_product(self, barcode: str) -> Optional[dict]:
+    async def lookup_product(
+        self,
+        session: AsyncSession,
+        barcode: str
+    ) -> Optional[dict]:
         """
         Look up a product by barcode using Open Food Facts API.
         Results are cached in the database to reduce API calls.
         """
         # Check cache first
-        cached = await get_barcode_cache(barcode)
+        cached = await crud.get_barcode_cache(session, barcode)
         if cached:
-            return cached["product_data"]
+            return cached.get_product_data()
         
         # Fetch from Open Food Facts
         try:
@@ -68,7 +78,7 @@ class BarcodeService:
                 }
                 
                 # Cache the result
-                await set_barcode_cache(barcode, product_info)
+                await crud.set_barcode_cache(session, barcode, product_info)
                 
                 return product_info
                 
