@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+:root {
+  --background: #F5EBE0;
+  --card-bg: #FFFFFF;
+  --text-primary: #6B5446;
+  --text-secondary: #8B7566;
+  --accent-green: #A8D5BA;
+  --accent-green-hover: #98C5AA;
+  --accent-blue: #B8D4E8;
+  --accent-yellow: #F9E5A8;
+  --accent-red: #E8A8A8;
+  --accent-red-hover: #D89898;
+  --accent-pink: #F0C8D0;
+  --border-light: #E5DBD0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Card Component */
+.card {
+  background-color: var(--card-bg);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+}
+
+/* Button Variants */
+.btn-primary {
+  background-color: var(--accent-green);
+  color: var(--text-primary);
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-green-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: var(--border-light);
+}
+
+/* Badge Styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-diabetes {
+  background-color: var(--accent-green);
+  color: #2A5A3A;
+}
+
+.badge-hypertension {
+  background-color: var(--accent-pink);
+  color: #8A3A50;
+}
+
+.badge-baby {
+  background-color: var(--accent-yellow);
+  color: #8A7A2A;
+}
+
+.badge-allergy {
+  background-color: var(--accent-red);
+  color: #8A2A2A;
+}
+
+.badge-celiac {
+  background-color: var(--accent-blue);
+  color: #2A4A6A;
+}
+
+.badge-heart {
+  background-color: var(--accent-pink);
+  color: #8A3A50;
+}
+
+.badge-kidney {
+  background-color: var(--accent-pink);
+  color: #8A3A50;
+}
+
+.badge-lactose {
+  background-color: var(--accent-yellow);
+  color: #8A7A2A;
+}
+
+.badge-uric {
+  background-color: var(--accent-blue);
+  color: #2A4A6A;
+}
+
+/* Toggle Switch */
+.toggle {
+  width: 3rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.toggle-knob {
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: white;
+  border-radius: 9999px;
+  position: absolute;
+  top: 0.125rem;
+  transition: transform 0.2s;
+}
+
+.toggle-off {
+  background-color: #D1D5DB;
+}
+
+.toggle-off .toggle-knob {
+  transform: translateX(0.125rem);
+}
+
+.toggle-on {
+  background-color: var(--accent-green);
+}
+
+.toggle-on .toggle-knob {
+  transform: translateX(1.625rem);
+}
