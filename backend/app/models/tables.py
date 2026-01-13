@@ -2,9 +2,11 @@
 SQLModel table definitions for PostgreSQL database.
 All database tables are defined here with their relationships.
 """
+from __future__ import annotations
+
 import os
 from datetime import datetime, date
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from enum import Enum
 from uuid import uuid4
 from sqlmodel import SQLModel, Field, Relationship
@@ -13,6 +15,12 @@ from dotenv import load_dotenv
 import json
 
 load_dotenv()
+
+# Type alias to avoid name conflict with field name 'date'
+if TYPE_CHECKING:
+    from datetime import date as DateType
+else:
+    DateType = date
 
 # Schema configuration - matches database.py
 SCHEMA_NAME = os.getenv("DB_SCHEMA", "mealadapt")
@@ -315,7 +323,7 @@ class LLMUsage(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: str = Field(foreign_key=f"{SCHEMA_NAME}.users.id", index=True)
     endpoint: str = Field(index=True)
-    date: date = Field(default_factory=lambda: date.today(), index=True)
+    date: DateType = Field(default_factory=lambda: date.today(), index=True)
     call_count: int = Field(default=0)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
