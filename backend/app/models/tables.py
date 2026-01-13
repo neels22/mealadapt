@@ -2,7 +2,6 @@
 SQLModel table definitions for PostgreSQL database.
 All database tables are defined here with their relationships.
 """
-from __future__ import annotations
 
 import os
 from datetime import datetime, date
@@ -67,13 +66,34 @@ class User(SQLModel, table=True):
     updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    family_members: List["FamilyMember"] = Relationship(back_populates="user", cascade_delete=True)
-    pantry_items: List["PantryItem"] = Relationship(back_populates="user", cascade_delete=True)
-    saved_recipes: List["SavedRecipe"] = Relationship(back_populates="user", cascade_delete=True)
-    shopping_lists: List["ShoppingList"] = Relationship(back_populates="user", cascade_delete=True)
-    meal_plans: List["MealPlan"] = Relationship(back_populates="user", cascade_delete=True)
-    refresh_tokens: List["RefreshToken"] = Relationship(back_populates="user", cascade_delete=True)
-    llm_usage: List["LLMUsage"] = Relationship(back_populates="user", cascade_delete=True)
+    family_members: List["FamilyMember"] = Relationship(
+        back_populates="user",
+        cascade_delete=True,
+    )
+    pantry_items: List["PantryItem"] = Relationship(
+        back_populates="user",
+        cascade_delete=True,
+    )
+    saved_recipes: List["SavedRecipe"] = Relationship(
+        back_populates="user",
+        cascade_delete=True,
+    )
+    shopping_lists: List["ShoppingList"] = Relationship(
+        back_populates="user",
+        cascade_delete=True,
+    )
+    meal_plans: List["MealPlan"] = Relationship(
+        back_populates="user",
+        cascade_delete=True,
+    )
+    refresh_tokens: List["RefreshToken"] = Relationship(
+        back_populates="user",
+        cascade_delete=True,
+    )
+    llm_usage: List["LLMUsage"] = Relationship(
+        back_populates="user",
+        cascade_delete=True,
+    )
 
 
 # ============== Family Tables ==============
@@ -92,8 +112,11 @@ class FamilyMember(SQLModel, table=True):
     preferences: Optional[str] = None  # JSON object string
     
     # Relationships
-    user: Optional[User] = Relationship(back_populates="family_members")
-    conditions: List["HealthCondition"] = Relationship(back_populates="member", cascade_delete=True)
+    user: Optional["User"] = Relationship(back_populates="family_members")
+    conditions: List["HealthCondition"] = Relationship(
+        back_populates="member",
+        cascade_delete=True,
+    )
     
     def get_custom_restrictions(self) -> List[str]:
         """Parse custom_restrictions JSON string to list"""
@@ -128,7 +151,7 @@ class HealthCondition(SQLModel, table=True):
     notes: Optional[str] = None
     
     # Relationships
-    member: FamilyMember = Relationship(back_populates="conditions")
+    member: "FamilyMember" = Relationship(back_populates="conditions")
 
 
 # ============== Pantry Tables ==============
@@ -145,7 +168,7 @@ class PantryItem(SQLModel, table=True):
     added_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    user: Optional[User] = Relationship(back_populates="pantry_items")
+    user: Optional["User"] = Relationship(back_populates="pantry_items")
 
 
 # ============== Recipe Tables ==============
@@ -165,8 +188,11 @@ class SavedRecipe(SQLModel, table=True):
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    user: User = Relationship(back_populates="saved_recipes")
-    tags: List["RecipeTag"] = Relationship(back_populates="recipe", cascade_delete=True)
+    user: "User" = Relationship(back_populates="saved_recipes")
+    tags: List["RecipeTag"] = Relationship(
+        back_populates="recipe",
+        cascade_delete=True,
+    )
     planned_meals: List["PlannedMeal"] = Relationship(back_populates="recipe")
     
     def get_analysis(self) -> Optional[dict]:
@@ -190,7 +216,7 @@ class RecipeTag(SQLModel, table=True):
     tag: str
     
     # Relationships
-    recipe: SavedRecipe = Relationship(back_populates="tags")
+    recipe: "SavedRecipe" = Relationship(back_populates="tags")
 
 
 # ============== Shopping Tables ==============
@@ -207,8 +233,11 @@ class ShoppingList(SQLModel, table=True):
     completed_at: Optional[datetime] = None
     
     # Relationships
-    user: User = Relationship(back_populates="shopping_lists")
-    items: List["ShoppingItem"] = Relationship(back_populates="shopping_list", cascade_delete=True)
+    user: "User" = Relationship(back_populates="shopping_lists")
+    items: List["ShoppingItem"] = Relationship(
+        back_populates="shopping_list",
+        cascade_delete=True,
+    )
 
 
 class ShoppingItem(SQLModel, table=True):
@@ -225,7 +254,7 @@ class ShoppingItem(SQLModel, table=True):
     source_recipe_id: Optional[str] = None
     
     # Relationships
-    shopping_list: ShoppingList = Relationship(back_populates="items")
+    shopping_list: "ShoppingList" = Relationship(back_populates="items")
 
 
 # ============== Meal Plan Tables ==============
@@ -241,8 +270,11 @@ class MealPlan(SQLModel, table=True):
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    user: User = Relationship(back_populates="meal_plans")
-    meals: List["PlannedMeal"] = Relationship(back_populates="plan", cascade_delete=True)
+    user: "User" = Relationship(back_populates="meal_plans")
+    meals: List["PlannedMeal"] = Relationship(
+        back_populates="plan",
+        cascade_delete=True,
+    )
 
 
 class PlannedMeal(SQLModel, table=True):
@@ -259,8 +291,8 @@ class PlannedMeal(SQLModel, table=True):
     notes: Optional[str] = None
     
     # Relationships
-    plan: MealPlan = Relationship(back_populates="meals")
-    recipe: Optional[SavedRecipe] = Relationship(back_populates="planned_meals")
+    plan: "MealPlan" = Relationship(back_populates="meals")
+    recipe: Optional["SavedRecipe"] = Relationship(back_populates="planned_meals")
 
 
 # ============== Cache Tables ==============
@@ -296,7 +328,7 @@ class RefreshToken(SQLModel, table=True):
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    user: User = Relationship(back_populates="refresh_tokens")
+    user: "User" = Relationship(back_populates="refresh_tokens")
 
 
 class BlacklistedToken(SQLModel, table=True):
@@ -329,7 +361,7 @@ class LLMUsage(SQLModel, table=True):
     updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    user: User = Relationship(back_populates="llm_usage")
+    user: "User" = Relationship(back_populates="llm_usage")
 
 
 # ============== Response Models (non-table) ==============
