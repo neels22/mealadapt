@@ -11,6 +11,7 @@ from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInval
 from app.models.user import User
 from app.models.family import FamilyMember, HealthCondition
 from app.middleware.auth import get_current_user
+from app.middleware.rate_limit import check_ai_rate_limit
 from app.database import get_session
 import json
 
@@ -111,14 +112,12 @@ async def clear_pantry(
 
 @router.post("/suggest-recipes")
 async def suggest_recipes(
-    current_user: Optional[User] = Depends(get_current_user),
+    user: User = Depends(check_ai_rate_limit("suggest_recipes_from_ingredients")),
     session: AsyncSession = Depends(get_session)
 ):
     """Suggest recipes based on pantry ingredients and family profile"""
-    user_id = current_user.id if current_user else None
-    
     # Get pantry items
-    items = await crud.get_pantry_items(session, user_id=user_id)
+    items = await crud.get_pantry_items(session, user_id=user.id)
     if not items:
         raise HTTPException(
             status_code=400,
@@ -128,7 +127,7 @@ async def suggest_recipes(
     ingredients = [item.name for item in items]
     
     # Get family profile
-    members = await crud.get_all_members(session, user_id=user_id)
+    members = await crud.get_all_members(session, user_id=user.id)
     family_profile = {"members": [member_to_dict(m) for m in members]}
     
     try:

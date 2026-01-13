@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
-from app.routes import family, recipe, scan, pantry, auth, saved_recipes, shopping, meal_plan, barcode
+from app.routes import family, recipe, scan, pantry, auth, saved_recipes, shopping, meal_plan, barcode, rate_limit
 from app.database import init_db, close_db
 
 load_dotenv()
@@ -52,6 +52,7 @@ app.include_router(meal_plan.router, prefix="/api/meal-plans", tags=["Meal Plans
 app.include_router(barcode.router, prefix="/api/barcode", tags=["Barcode"])
 app.include_router(scan.router, prefix="/api/scan", tags=["Scan"])
 app.include_router(pantry.router, prefix="/api/pantry", tags=["Pantry"])
+app.include_router(rate_limit.router, prefix="/api/rate-limits", tags=["Rate Limits"])
 
 
 @app.get("/")

@@ -18,6 +18,7 @@ from app.models.shopping import ShoppingListResponse, ShoppingItem
 from app import crud
 from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInvalidOutput
 from app.middleware.auth import get_current_user
+from app.middleware.rate_limit import check_ai_rate_limit
 from app.models.user import User
 from app.database import get_session
 
@@ -153,7 +154,7 @@ async def remove_meal(
 async def generate_shopping_from_plan(
     plan_id: str,
     request: GenerateShoppingFromPlanRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(check_ai_rate_limit("extract_ingredients_from_recipes")),
     session: AsyncSession = Depends(get_session)
 ):
     """Generate a shopping list from all recipes in the meal plan"""

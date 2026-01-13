@@ -3,7 +3,7 @@ CRUD operations for all database models using SQLModel.
 All functions accept an AsyncSession as the first parameter.
 """
 import json
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional
 from uuid import uuid4
 from sqlmodel import select, delete
@@ -14,6 +14,7 @@ from app.models.tables import (
     User, FamilyMember, HealthCondition, PantryItem,
     SavedRecipe, RecipeTag, ShoppingList, ShoppingItem,
     MealPlan, PlannedMeal, BarcodeCache, RefreshToken, BlacklistedToken,
+    LLMUsage,
     Role, ConditionType
 )
 
@@ -907,3 +908,37 @@ async def cleanup_expired_tokens(session: AsyncSession) -> None:
         delete(BlacklistedToken).where(BlacklistedToken.expires_at < now)
     )
     await session.flush()
+
+
+# ============== LLM Usage CRUD ==============
+
+async def get_llm_usage(
+    session: AsyncSession,
+    user_id: str,
+    endpoint: Optional[str] = None,
+    usage_date: Optional[date] = None
+) -> List[LLMUsage]:
+    """
+    Get LLM usage records for a user.
+    
+    Args:
+        session: Database session
+        user_id: User ID
+        endpoint: Optional endpoint name to filter by
+        usage_date: Optional date to filter by (defaults to today)
+    
+    Returns:
+        List of LLMUsage records
+    """
+    from datetime import date as date_type
+    
+    stmt = select(LLMUsage).where(LLMUsage.user_id == user_id)
+    
+    if endpoint:
+        stmt = stmt.where(LLMUsage.endpoint == endpoint)
+    
+    if usage_date:
+        stmt = stmt.where(LLMUsage.date == usage_date)
+    
+    result = await session.execute(stmt)
+    return list(result.scalars().all())

@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.barcode_service import barcode_service
 from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInvalidOutput
 from app.middleware.auth import get_current_user
+from app.middleware.rate_limit import check_ai_rate_limit
+from app.models.user import User
 from app.database import get_session
 
 router = APIRouter()
@@ -95,7 +97,7 @@ async def lookup_barcode(
 async def analyze_barcode(
     barcode: str,
     family_profile: dict,
-    user: dict = Depends(get_current_user),
+    user: User = Depends(check_ai_rate_limit("analyze_ingredients")),
     session: AsyncSession = Depends(get_session)
 ):
     """Analyze a product's ingredients against family profile"""

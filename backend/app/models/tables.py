@@ -3,11 +3,12 @@ SQLModel table definitions for PostgreSQL database.
 All database tables are defined here with their relationships.
 """
 import os
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, List
 from enum import Enum
 from uuid import uuid4
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import UniqueConstraint
 from dotenv import load_dotenv
 import json
 
@@ -64,6 +65,7 @@ class User(SQLModel, table=True):
     shopping_lists: List["ShoppingList"] = Relationship(back_populates="user", cascade_delete=True)
     meal_plans: List["MealPlan"] = Relationship(back_populates="user", cascade_delete=True)
     refresh_tokens: List["RefreshToken"] = Relationship(back_populates="user", cascade_delete=True)
+    llm_usage: List["LLMUsage"] = Relationship(back_populates="user", cascade_delete=True)
 
 
 # ============== Family Tables ==============
@@ -298,6 +300,28 @@ class BlacklistedToken(SQLModel, table=True):
     token_type: str  # "access" or "refresh"
     expires_at: datetime
     blacklisted_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+
+
+# ============== Rate Limiting Tables ==============
+
+class LLMUsage(SQLModel, table=True):
+    """Track LLM API calls per user per endpoint per day"""
+    __tablename__ = "llm_usage"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'endpoint', 'date', name='uq_user_endpoint_date'),
+        {"schema": SCHEMA_NAME}
+    )
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(foreign_key=f"{SCHEMA_NAME}.users.id", index=True)
+    endpoint: str = Field(index=True)
+    date: date = Field(default_factory=lambda: date.today(), index=True)
+    call_count: int = Field(default=0)
+    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    user: User = Relationship(back_populates="llm_usage")
 
 
 # ============== Response Models (non-table) ==============

@@ -10,7 +10,7 @@ from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInval
 from app import crud
 from app.models.family import FamilyProfile
 from app.models.user import User
-from app.middleware.auth import get_current_user
+from app.middleware.rate_limit import check_ai_rate_limit
 from app.database import get_session
 
 router = APIRouter()
@@ -49,7 +49,7 @@ def member_to_dict(member) -> dict:
 @router.post("/analyze")
 async def analyze_ingredient_label(
     file: UploadFile = File(...),
-    current_user: Optional[User] = Depends(get_current_user),
+    user: User = Depends(check_ai_rate_limit("analyze_ingredient_image")),
     session: AsyncSession = Depends(get_session)
 ):
     """
@@ -63,9 +63,8 @@ async def analyze_ingredient_label(
         # Read image data
         image_data = await file.read()
         
-        # Get family profile from database (filtered by user if authenticated)
-        user_id = current_user.id if current_user else None
-        members = await crud.get_all_members(session, user_id=user_id)
+        # Get family profile from database (filtered by user)
+        members = await crud.get_all_members(session, user_id=user.id)
         family_profile = {"members": [member_to_dict(m) for m in members]}
         
         if not family_profile["members"]:

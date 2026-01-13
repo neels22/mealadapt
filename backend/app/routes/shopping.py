@@ -18,6 +18,7 @@ from app.models.shopping import (
 from app import crud
 from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInvalidOutput
 from app.middleware.auth import get_current_user
+from app.middleware.rate_limit import check_ai_rate_limit
 from app.models.user import User
 from app.database import get_session
 
@@ -109,7 +110,7 @@ async def create_list(
 @router.post("/lists/generate", response_model=ShoppingListResponse)
 async def generate_list_from_recipes(
     request: GenerateShoppingListRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(check_ai_rate_limit("extract_ingredients_from_recipes")),
     session: AsyncSession = Depends(get_session)
 ):
     """Generate a shopping list from saved recipes using AI"""

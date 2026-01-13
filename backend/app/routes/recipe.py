@@ -1,12 +1,21 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.recipe import RecipeRequest, RecipeAnalysis
+from app.models.user import User
 from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInvalidOutput
+from app.middleware.rate_limit import check_ai_rate_limit
+from app.database import get_session
 
 router = APIRouter()
 
 
 @router.post("/analyze", response_model=RecipeAnalysis)
-async def analyze_recipe(request: RecipeRequest):
+async def analyze_recipe(
+    request: RecipeRequest,
+    user: User = Depends(check_ai_rate_limit("analyze_recipe")),
+    session: AsyncSession = Depends(get_session)
+):
     """Analyze a recipe against family dietary needs"""
     try:
         analysis = ai_service.analyze_recipe(

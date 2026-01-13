@@ -43,6 +43,7 @@ from app.models.tables import (
     BarcodeCache,
     RefreshToken,
     BlacklistedToken,
+    LLMUsage,
     UserRead, FamilyMemberRead, HealthConditionRead
 )
 
@@ -69,5 +70,5 @@ __all__ = [
     "UserTable", "FamilyMemberTable", "HealthConditionTable", "PantryItem",
     "SavedRecipeTable", "RecipeTag", "ShoppingListTable", "ShoppingItemTable",
     "MealPlanTable", "PlannedMealTable", "BarcodeCache", "RefreshToken",
-    "BlacklistedToken", "UserRead", "FamilyMemberRead", "HealthConditionRead"
+    "BlacklistedToken", "LLMUsage", "UserRead", "FamilyMemberRead", "HealthConditionRead"
 ]

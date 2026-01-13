@@ -60,7 +60,8 @@ async def init_db():
     from app.models.tables import (
         User, FamilyMember, HealthCondition, PantryItem,
         SavedRecipe, RecipeTag, ShoppingList, ShoppingItem,
-        MealPlan, PlannedMeal, BarcodeCache, RefreshToken, BlacklistedToken
+        MealPlan, PlannedMeal, BarcodeCache, RefreshToken, BlacklistedToken,
+        LLMUsage
     )
     
     try:
