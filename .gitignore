@@ -14,7 +14,7 @@ __pycache__/
 .vercel/
 backend/mainmeal.db
 frontend/mainmeal.db
-
+.env.example
 # ====================
 # Python / Backend
 # ====================

@@ -63,7 +63,7 @@ class BarcodeAnalysisResponse(BaseModel):
 @router.get("/{barcode}", response_model=BarcodeProductResponse)
 async def lookup_barcode(
     barcode: str,
-    user: dict = Depends(get_current_user),
+    user: Optional[User] = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
     """Look up a product by barcode"""

@@ -930,8 +930,6 @@ async def get_llm_usage(
     Returns:
         List of LLMUsage records
     """
-    from datetime import date as date_type
-    
     stmt = select(LLMUsage).where(LLMUsage.user_id == user_id)
     
     if endpoint:
