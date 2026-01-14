@@ -31,13 +31,17 @@ import {
   BarcodeAnalysisResponse
 } from './types';
 
-// Validate API URL is set
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) {
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    console.error('NEXT_PUBLIC_API_URL environment variable is required');
-  }
+// Get API URL - allow build to proceed without it, but validate at runtime
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+// Only throw error at runtime (in browser), not during build/static generation
+if (typeof window !== 'undefined' && !API_URL) {
   throw new Error('NEXT_PUBLIC_API_URL environment variable is required. Please set it in your .env.local file.');
+}
+
+// Log warning during build if missing (but don't throw)
+if (typeof window === 'undefined' && !process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === 'development') {
+  console.warn('NEXT_PUBLIC_API_URL environment variable is not set. API calls will fail at runtime.');
 }
 
 // Token management
