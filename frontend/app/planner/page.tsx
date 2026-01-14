@@ -14,7 +14,7 @@ import {
   Utensils
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import { MealPlan, PlannedMeal, SavedRecipe, MealType } from '@/lib/types';
+import { MealPlan, PlannedMeal, SavedRecipe, MealType, VerdictType } from '@/lib/types';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 const MEAL_TYPES: { value: MealType; label: string; icon: string }[] = [
@@ -520,8 +520,8 @@ function ViewRecipeModal({
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium">{verdict.member_name}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          verdict.verdict === 'safe' ? 'bg-green-100 text-green-700' :
-                          verdict.verdict === 'caution' ? 'bg-yellow-100 text-yellow-700' :
+                          verdict.verdict === VerdictType.SAFE ? 'bg-green-100 text-green-700' :
+                          verdict.verdict === VerdictType.NEEDS_ADAPTATION ? 'bg-yellow-100 text-yellow-700' :
                           'bg-red-100 text-red-700'
                         }`}>
                           {verdict.verdict}
