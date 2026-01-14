@@ -497,62 +497,85 @@ function ViewRecipeModal({
                 </div>
               )}
 
-              {/* Safety Score */}
-              {analysis.safety_score !== undefined && (
+              {/* Overall Safety */}
+              {analysis.overall_safety && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Safety Score:</span>
+                  <span className="text-sm font-medium">Overall Safety:</span>
                   <span className={`px-2 py-1 rounded-full text-sm font-semibold ${
-                    analysis.safety_score >= 80 ? 'bg-green-100 text-green-700' :
-                    analysis.safety_score >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                    analysis.overall_safety.toLowerCase().includes('safe') ? 'bg-green-100 text-green-700' :
+                    analysis.overall_safety.toLowerCase().includes('caution') ? 'bg-yellow-100 text-yellow-700' :
                     'bg-red-100 text-red-700'
                   }`}>
-                    {analysis.safety_score}%
+                    {analysis.overall_safety}
                   </span>
                 </div>
               )}
 
-              {/* Warnings */}
-              {analysis.warnings && analysis.warnings.length > 0 && (
-                <div className="bg-red-50 rounded-lg p-3">
-                  <h4 className="font-semibold text-red-700 mb-2">⚠️ Warnings</h4>
-                  <ul className="space-y-1">
-                    {analysis.warnings.map((warning, i) => (
-                      <li key={i} className="text-sm text-red-600">• {warning}</li>
-                    ))}
-                  </ul>
+              {/* Member Verdicts */}
+              {analysis.member_verdicts && analysis.member_verdicts.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold">Family Member Analysis</h4>
+                  {analysis.member_verdicts.map((verdict, i) => (
+                    <div key={i} className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">{verdict.member_name}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          verdict.verdict === 'safe' ? 'bg-green-100 text-green-700' :
+                          verdict.verdict === 'caution' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {verdict.verdict}
+                        </span>
+                      </div>
+                      {verdict.concerns && verdict.concerns.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-red-700 mb-1">Concerns:</p>
+                          <ul className="space-y-1">
+                            {verdict.concerns.map((concern, j) => (
+                              <li key={j} className="text-sm text-red-600">• {concern}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {verdict.adaptations && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-[var(--accent-green-dark)] mb-1">Suggested Adaptations:</p>
+                          <ul className="space-y-1">
+                            {verdict.adaptations.substitutions && verdict.adaptations.substitutions.length > 0 && (
+                              verdict.adaptations.substitutions.map((sub, j) => (
+                                <li key={j} className="text-sm text-[var(--text-secondary)]">
+                                  • Replace <span className="font-medium">{sub.original}</span> with <span className="font-medium">{sub.replacement}</span>
+                                  {sub.reason && <span className="text-xs text-gray-500"> ({sub.reason})</span>}
+                                </li>
+                              ))
+                            )}
+                            {verdict.adaptations.modifications && verdict.adaptations.modifications.length > 0 && (
+                              verdict.adaptations.modifications.map((mod, j) => (
+                                <li key={j} className="text-sm text-[var(--text-secondary)]">• {mod}</li>
+                              ))
+                            )}
+                            {verdict.adaptations.preparation_changes && verdict.adaptations.preparation_changes.length > 0 && (
+                              verdict.adaptations.preparation_changes.map((change, j) => (
+                                <li key={j} className="text-sm text-[var(--text-secondary)]">• {change}</li>
+                              ))
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Adaptations */}
-              {analysis.adaptations && analysis.adaptations.length > 0 && (
+              {/* General Tips */}
+              {analysis.general_tips && analysis.general_tips.length > 0 && (
                 <div className="bg-[var(--accent-green)]/10 rounded-lg p-3">
-                  <h4 className="font-semibold text-[var(--accent-green-dark)] mb-2">✨ Suggested Adaptations</h4>
+                  <h4 className="font-semibold text-[var(--accent-green-dark)] mb-2">💡 General Tips</h4>
                   <ul className="space-y-1">
-                    {analysis.adaptations.map((adaptation, i) => (
-                      <li key={i} className="text-sm text-[var(--text-secondary)]">• {adaptation}</li>
+                    {analysis.general_tips.map((tip, i) => (
+                      <li key={i} className="text-sm text-[var(--text-secondary)]">• {tip}</li>
                     ))}
                   </ul>
-                </div>
-              )}
-
-              {/* Nutrition */}
-              {analysis.nutrition_per_serving && (
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="font-semibold mb-2">📊 Nutrition per Serving</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {analysis.nutrition_per_serving.calories && (
-                      <div>Calories: <span className="font-medium">{analysis.nutrition_per_serving.calories}</span></div>
-                    )}
-                    {analysis.nutrition_per_serving.protein && (
-                      <div>Protein: <span className="font-medium">{analysis.nutrition_per_serving.protein}</span></div>
-                    )}
-                    {analysis.nutrition_per_serving.carbs && (
-                      <div>Carbs: <span className="font-medium">{analysis.nutrition_per_serving.carbs}</span></div>
-                    )}
-                    {analysis.nutrition_per_serving.fat && (
-                      <div>Fat: <span className="font-medium">{analysis.nutrition_per_serving.fat}</span></div>
-                    )}
-                  </div>
                 </div>
               )}
             </>
