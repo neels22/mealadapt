@@ -28,8 +28,7 @@ import {
   UpdateMealRequest,
   GenerateShoppingFromPlanRequest,
   BarcodeProduct,
-  BarcodeAnalysisResponse,
-  FamilyProfile
+  BarcodeAnalysisResponse
 } from './types';
 
 // Validate API URL is set
