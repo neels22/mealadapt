@@ -6,7 +6,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (for local development)
   postgres:
     image: postgres:15-alpine
     container_name: mainmeal_postgres
@@ -25,6 +25,32 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Cloud SQL Proxy (for GCP Cloud SQL connection)
+  cloud-sql-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.0
+    container_name: mainmeal_cloud_sql_proxy
+    command:
+      - gen-lang-client-0515155454:us-central1:free-trial-first-project
+      - --port=5433
+      - --address=0.0.0.0
+    ports:
+      - "5433:5433"
+    environment:
+      # Use Application Default Credentials if running on GCP
+      # Or mount service account key file (see commented section below)
+      # GOOGLE_APPLICATION_CREDENTIALS: /secrets/cloudsql/key.json
+    # Uncomment below if using service account key file:
+    # volumes:
+    #   - ./gcp-service-account.json:/secrets/cloudsql/key.json:ro
+    restart: unless-stopped
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 5433 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Backend API
   backend:
     build:
@@ -32,7 +58,14 @@ services:
       dockerfile: Dockerfile
     container_name: mainmeal_backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mainmeal}:${POSTGRES_PASSWORD:-mainmeal_secret}@postgres:5432/${POSTGRES_DB:-mainmeal}
+      # DATABASE_URL should be set in .env file
+      # For Cloud SQL: postgresql+asyncpg://${CLOUD_SQL_USER}:${CLOUD_SQL_PASSWORD}@cloud-sql-proxy:5433/${CLOUD_SQL_DATABASE}
+      # For local postgres: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
+      DB_SCHEMA: ${DB_SCHEMA:-mealadapt}
+      CLOUD_SQL_USER: ${CLOUD_SQL_USER:-}
+      CLOUD_SQL_PASSWORD: ${CLOUD_SQL_PASSWORD:-}
+      CLOUD_SQL_DATABASE: ${CLOUD_SQL_DATABASE:-}
       JWT_SECRET: ${JWT_SECRET}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
@@ -40,8 +73,11 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      postgres:
-        condition: service_healthy
+      cloud-sql-proxy:
+        condition: service_started
+      # Uncomment below if using local postgres instead of Cloud SQL:
+      # postgres:
+      #   condition: service_healthy
     restart: unless-stopped
 
 volumes:
