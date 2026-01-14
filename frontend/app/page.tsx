@@ -25,7 +25,9 @@ export default function Home() {
       const data = await api.getFamilyProfile();
       setProfile(data);
     } catch (error) {
-      console.error('Failed to load profile:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load profile:', error);
+      }
       setProfile({ members: [] });
     } finally {
       setLoading(false);

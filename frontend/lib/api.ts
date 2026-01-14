@@ -32,7 +32,14 @@ import {
   FamilyProfile
 } from './types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Validate API URL is set
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) {
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.error('NEXT_PUBLIC_API_URL environment variable is required');
+  }
+  throw new Error('NEXT_PUBLIC_API_URL environment variable is required. Please set it in your .env.local file.');
+}
 
 // Token management
 const TOKEN_KEY = 'mealadapt_token';
@@ -83,7 +90,7 @@ const getAuthHeaders = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// Refresh the access token using the refresh token
+  // Refresh the access token using the refresh token
 export const refreshAccessToken = async (): Promise<boolean> => {
   // If already refreshing, wait for that to complete
   if (isRefreshing && refreshPromise) {
@@ -99,7 +106,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/refresh`, {
+      const res = await fetchWithTimeout(`${API_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken })
@@ -126,10 +133,36 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   return refreshPromise;
 };
 
-// Wrapper for authenticated fetch with automatic token refresh
+// Request timeout helper
+const fetchWithTimeout = async (
+  url: string,
+  options: RequestInit = {},
+  timeout: number = 30000
+): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout - please try again');
+    }
+    throw error;
+  }
+};
+
+// Wrapper for authenticated fetch with automatic token refresh and retry logic
 const authenticatedFetch = async (
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retries: number = 2
 ): Promise<Response> => {
   // First attempt with current token
   const headers = {
@@ -137,7 +170,20 @@ const authenticatedFetch = async (
     ...getAuthHeaders()
   };
 
-  let res = await fetch(url, { ...options, headers });
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(url, { ...options, headers });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Network error. Please check your internet connection.');
+      }
+    }
+    throw error;
+  }
 
   // If unauthorized, try to refresh token and retry
   if (res.status === 401) {
@@ -148,8 +194,22 @@ const authenticatedFetch = async (
         ...options.headers,
         ...getAuthHeaders()
       };
-      res = await fetch(url, { ...options, headers: newHeaders });
+      try {
+        res = await fetchWithTimeout(url, { ...options, headers: newHeaders });
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('timeout')) {
+          throw new Error('Request timed out. Please check your connection and try again.');
+        }
+        throw error;
+      }
     }
+  }
+
+  // Retry logic for 5xx errors
+  if (res.status >= 500 && res.status < 600 && retries > 0) {
+    // Wait before retry (exponential backoff)
+    await new Promise(resolve => setTimeout(resolve, 1000 * (3 - retries)));
+    return authenticatedFetch(url, options, retries - 1);
   }
 
   return res;
@@ -158,42 +218,62 @@ const authenticatedFetch = async (
 export const api = {
   // Auth endpoints
   async register(data: RegisterData): Promise<AuthResponse> {
-    const res = await fetch(`${API_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Registration failed');
+    try {
+      const res = await fetchWithTimeout(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.detail || 'Registration failed');
+      }
+      const result = await res.json();
+      setToken(result.access_token);
+      setRefreshToken(result.refresh_token);
+      return result;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('timeout')) {
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+      if (error instanceof Error && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
+        throw new Error('Network error. Please check your internet connection.');
+      }
+      throw error;
     }
-    const result = await res.json();
-    setToken(result.access_token);
-    setRefreshToken(result.refresh_token);
-    return result;
   },
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials)
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Invalid email or password');
+    try {
+      const res = await fetchWithTimeout(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.detail || 'Invalid email or password');
+      }
+      const result = await res.json();
+      setToken(result.access_token);
+      setRefreshToken(result.refresh_token);
+      return result;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('timeout')) {
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+      if (error instanceof Error && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
+        throw new Error('Network error. Please check your internet connection.');
+      }
+      throw error;
     }
-    const result = await res.json();
-    setToken(result.access_token);
-    setRefreshToken(result.refresh_token);
-    return result;
   },
 
   async logout(): Promise<void> {
     const token = getToken();
     if (token) {
       try {
-        await fetch(`${API_URL}/api/auth/logout`, {
+        await fetchWithTimeout(`${API_URL}/api/auth/logout`, {
           method: 'POST',
           headers: { ...getAuthHeaders() }
         });

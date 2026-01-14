@@ -29,7 +29,9 @@ export default function PantryPage() {
       const data = await api.getPantryItems();
       setItems(data);
     } catch (err) {
-      console.error('Failed to load pantry:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load pantry:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -45,7 +47,9 @@ export default function PantryPage() {
       setNewItem('');
       setSuggestions(null);
     } catch (err) {
-      console.error('Failed to add item:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to add item:', err);
+      }
     }
   };
 
@@ -55,7 +59,9 @@ export default function PantryPage() {
       setItems(items.filter(i => i.id !== itemId));
       setSuggestions(null);
     } catch (err) {
-      console.error('Failed to delete item:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to delete item:', err);
+      }
     }
   };
 
@@ -67,7 +73,9 @@ export default function PantryPage() {
       setItems([]);
       setSuggestions(null);
     } catch (err) {
-      console.error('Failed to clear pantry:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to clear pantry:', err);
+      }
     }
   };
 
@@ -77,7 +85,9 @@ export default function PantryPage() {
         const item = await api.addPantryItem(ingredient);
         setItems(prev => [item, ...prev]);
       } catch (err) {
-        console.error('Failed to add sample item:', err);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to add sample item:', err);
+        }
       }
     }
     setSuggestions(null);

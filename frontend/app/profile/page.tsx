@@ -97,7 +97,9 @@ export default function ProfilePage() {
       await logout();
       router.push('/');
     } catch (err) {
-      console.error('Failed to delete account:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to delete account:', err);
+      }
       setIsDeleting(false);
     }
   };

@@ -37,7 +37,9 @@ export default function ScanPage() {
       const profile = await api.getFamilyProfile();
       setFamilyProfile(profile);
     } catch (err) {
-      console.error('Failed to load family profile:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load family profile:', err);
+      }
     }
   };
 

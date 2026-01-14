@@ -25,7 +25,9 @@ function RecipesContent() {
       const response = await api.getSavedRecipes(filter === 'favorites');
       setRecipes(response.recipes);
     } catch (error) {
-      console.error('Failed to load recipes:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load recipes:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -39,7 +41,9 @@ function RecipesContent() {
         r.id === id ? { ...r, is_favorite: isFavorite } : r
       ));
     } catch (error) {
-      console.error('Failed to update recipe:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to update recipe:', error);
+      }
     }
   };
 
@@ -48,7 +52,9 @@ function RecipesContent() {
       await api.deleteSavedRecipe(id);
       setRecipes(recipes.filter(r => r.id !== id));
     } catch (error) {
-      console.error('Failed to delete recipe:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to delete recipe:', error);
+      }
     }
   };
 

@@ -10,6 +10,9 @@ import os
 
 from app.routes import family, recipe, scan, pantry, auth, saved_recipes, shopping, meal_plan, barcode, rate_limit
 from app.database import init_db, close_db
+from app.middleware.security import SecurityHeadersMiddleware
+from app.middleware.request_size import RequestSizeLimitMiddleware
+from app.middleware.error_handler import ErrorHandlerMiddleware
 
 load_dotenv()
 
@@ -31,15 +34,27 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Error Handler Middleware (must be first to catch all errors)
+app.add_middleware(ErrorHandlerMiddleware)
+
+# Request Size Limit Middleware
+app.add_middleware(RequestSizeLimitMiddleware, max_size=10 * 1024 * 1024)  # 10MB
+
+# Security Headers Middleware (must be added before CORS)
+app.add_middleware(SecurityHeadersMiddleware)
+
 # CORS Configuration
 origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+# Strip whitespace from origins
+origins = [origin.strip() for origin in origins]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    expose_headers=["Content-Range", "X-Total-Count"],
 )
 
 # Include routers

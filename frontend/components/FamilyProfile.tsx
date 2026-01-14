@@ -20,7 +20,9 @@ export default function FamilyProfile({ profile, onUpdate }: Props) {
       onUpdate();
       setShowAddModal(false);
     } catch (error) {
-      console.error('Failed to add member:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to add member:', error);
+      }
     }
   };
 
@@ -29,7 +31,9 @@ export default function FamilyProfile({ profile, onUpdate }: Props) {
       await api.updateMember(member.id, member);
       onUpdate();
     } catch (error) {
-      console.error('Failed to update member:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to update member:', error);
+      }
     }
   };
 
@@ -38,7 +42,9 @@ export default function FamilyProfile({ profile, onUpdate }: Props) {
       await api.deleteMember(memberId);
       onUpdate();
     } catch (error) {
-      console.error('Failed to delete member:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to delete member:', error);
+      }
     }
   };
 

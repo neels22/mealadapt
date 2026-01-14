@@ -63,7 +63,9 @@ function PlannerContent() {
       const data = await api.getMealPlan(formatDate(currentWeek));
       setPlan(data);
     } catch (error) {
-      console.error('Failed to load meal plan:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load meal plan:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,9 @@ function PlannerContent() {
       const response = await api.getSavedRecipes();
       setRecipes(response.recipes);
     } catch (error) {
-      console.error('Failed to load recipes:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load recipes:', error);
+      }
     }
   };
 
@@ -115,7 +119,9 @@ function PlannerContent() {
       }
       setShowAddModal(null);
     } catch (error) {
-      console.error('Failed to add meal:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to add meal:', error);
+      }
     }
   };
 
@@ -129,7 +135,9 @@ function PlannerContent() {
         });
       }
     } catch (error) {
-      console.error('Failed to delete meal:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to delete meal:', error);
+      }
     }
   };
 
@@ -146,7 +154,9 @@ function PlannerContent() {
       await api.generateShoppingFromPlan(plan.id, { list_name: listName });
       alert('Shopping list created! Check your Shopping page.');
     } catch (error) {
-      console.error('Failed to generate shopping list:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to generate shopping list:', error);
+      }
       alert('Failed to generate shopping list. Please try again.');
     } finally {
       setGeneratingList(false);

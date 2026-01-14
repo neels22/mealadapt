@@ -46,6 +46,12 @@ def member_to_dict(member) -> dict:
     }
 
 
+# File upload constants
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"]
+
+
 @router.post("/analyze")
 async def analyze_ingredient_label(
     file: UploadFile = File(...),
@@ -56,12 +62,37 @@ async def analyze_ingredient_label(
     Analyze an ingredient label image for family safety
     """
     # Validate file type
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+    if not file.content_type:
+        raise HTTPException(status_code=400, detail="File content type is required")
+    
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed types: {', '.join(ALLOWED_MIME_TYPES)}"
+        )
+    
+    # Validate file extension
+    if file.filename:
+        file_ext = "." + file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+        if file_ext not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid file extension. Allowed extensions: {', '.join(ALLOWED_EXTENSIONS)}"
+            )
     
     try:
-        # Read image data
+        # Read image data with size check
         image_data = await file.read()
+        
+        # Validate file size
+        if len(image_data) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024 * 1024)}MB"
+            )
+        
+        if len(image_data) == 0:
+            raise HTTPException(status_code=400, detail="File is empty")
         
         # Get family profile from database (filtered by user)
         members = await crud.get_all_members(session, user_id=user.id)

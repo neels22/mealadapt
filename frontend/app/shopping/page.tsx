@@ -63,7 +63,9 @@ function ShoppingContent() {
         setExpandedLists(new Set([response.lists[0].id]));
       }
     } catch (error) {
-      console.error('Failed to load shopping lists:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load shopping lists:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,9 @@ function ShoppingContent() {
         return list;
       }));
     } catch (error) {
-      console.error('Failed to update item:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to update item:', error);
+      }
     }
   };
 
@@ -111,7 +115,9 @@ function ShoppingContent() {
         return list;
       }));
     } catch (error) {
-      console.error('Failed to delete item:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to delete item:', error);
+      }
     }
   };
 
@@ -131,7 +137,9 @@ function ShoppingContent() {
       }));
       setNewItemInput('');
     } catch (error) {
-      console.error('Failed to add item:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to add item:', error);
+      }
     }
   };
 
@@ -142,7 +150,9 @@ function ShoppingContent() {
       await api.deleteShoppingList(listId);
       setLists(lists.filter(l => l.id !== listId));
     } catch (error) {
-      console.error('Failed to delete list:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to delete list:', error);
+      }
     }
   };
 
@@ -393,7 +403,9 @@ function CreateListModal({
       const list = await api.createShoppingList({ name: name.trim() });
       onCreate(list);
     } catch (error) {
-      console.error('Failed to create list:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to create list:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -465,7 +477,9 @@ function GenerateListModal({
       const response = await api.getSavedRecipes();
       setRecipes(response.recipes);
     } catch (error) {
-      console.error('Failed to load recipes:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load recipes:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -492,7 +506,9 @@ function GenerateListModal({
       });
       onGenerate(list);
     } catch (error) {
-      console.error('Failed to generate list:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to generate list:', error);
+      }
       alert('Failed to generate shopping list. Please try again.');
     } finally {
       setGenerating(false);

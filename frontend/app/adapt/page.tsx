@@ -32,7 +32,9 @@ export default function AdaptRecipe() {
       const data = await api.getFamilyProfile();
       setProfile(data);
     } catch (error) {
-      console.error('Failed to load profile:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load profile:', error);
+      }
     }
   };
 
@@ -47,7 +49,9 @@ export default function AdaptRecipe() {
       const result = await api.analyzeRecipe(recipe, profile);
       setAnalysis(result);
     } catch (error) {
-      console.error('Failed to analyze recipe:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to analyze recipe:', error);
+      }
       setError('Failed to analyze recipe. Please check your API connection and try again.');
     } finally {
       setLoading(false);

@@ -58,7 +58,9 @@ export default function RecipeAnalysisDisplay({ analysis, recipeText, onSaved }:
       onSaved?.();
     } catch (err) {
       setError('Failed to save recipe');
-      console.error('Failed to save recipe:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to save recipe:', err);
+      }
     } finally {
       setSaving(false);
     }
