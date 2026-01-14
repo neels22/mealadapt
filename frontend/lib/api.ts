@@ -32,12 +32,13 @@ import {
 } from './types';
 
 // Get API URL - allow build to proceed without it, but validate at runtime
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
-// Only throw error at runtime (in browser), not during build/static generation
-if (typeof window !== 'undefined' && !API_URL) {
-  throw new Error('NEXT_PUBLIC_API_URL environment variable is required. Please set it in your .env.local file.');
-}
+const getApiUrl = (): string => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  if (!apiUrl && typeof window !== 'undefined') {
+    throw new Error('NEXT_PUBLIC_API_URL environment variable is required. Please set it in your Vercel environment variables.');
+  }
+  return apiUrl;
+};
 
 // Log warning during build if missing (but don't throw)
 if (typeof window === 'undefined' && !process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === 'development') {
@@ -109,7 +110,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      const res = await fetchWithTimeout(`${API_URL}/api/auth/refresh`, {
+      const res = await fetchWithTimeout(`${getApiUrl()}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken })
@@ -222,7 +223,7 @@ export const api = {
   // Auth endpoints
   async register(data: RegisterData): Promise<AuthResponse> {
     try {
-      const res = await fetchWithTimeout(`${API_URL}/api/auth/register`, {
+      const res = await fetchWithTimeout(`${getApiUrl()}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -248,7 +249,7 @@ export const api = {
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const res = await fetchWithTimeout(`${API_URL}/api/auth/login`, {
+      const res = await fetchWithTimeout(`${getApiUrl()}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
@@ -276,7 +277,7 @@ export const api = {
     const token = getToken();
     if (token) {
       try {
-        await fetchWithTimeout(`${API_URL}/api/auth/logout`, {
+        await fetchWithTimeout(`${getApiUrl()}/api/auth/logout`, {
           method: 'POST',
           headers: { ...getAuthHeaders() }
         });
@@ -291,7 +292,7 @@ export const api = {
     const token = getToken();
     if (!token) return null;
     
-    const res = await authenticatedFetch(`${API_URL}/api/auth/me`);
+    const res = await authenticatedFetch(`${getApiUrl()}/api/auth/me`);
     if (!res.ok) {
       if (res.status === 401) {
         removeAllTokens();
@@ -303,7 +304,7 @@ export const api = {
   },
 
   async updateProfile(data: UserUpdate): Promise<User> {
-    const res = await authenticatedFetch(`${API_URL}/api/auth/me`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/auth/me`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -316,7 +317,7 @@ export const api = {
   },
 
   async changePassword(data: PasswordUpdate): Promise<void> {
-    const res = await authenticatedFetch(`${API_URL}/api/auth/me/password`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/auth/me/password`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -328,7 +329,7 @@ export const api = {
   },
 
   async deleteAccount(): Promise<void> {
-    const res = await authenticatedFetch(`${API_URL}/api/auth/me`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/auth/me`, {
       method: 'DELETE'
     });
     if (!res.ok) {
@@ -340,13 +341,13 @@ export const api = {
 
   // Family endpoints
   async getFamilyProfile(): Promise<FamilyProfile> {
-    const res = await authenticatedFetch(`${API_URL}/api/family/profile`);
+    const res = await authenticatedFetch(`${getApiUrl()}/api/family/profile`);
     if (!res.ok) throw new Error('Failed to fetch profile');
     return res.json();
   },
 
   async createFamilyProfile(profile: FamilyProfile): Promise<FamilyProfile> {
-    const res = await authenticatedFetch(`${API_URL}/api/family/profile`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/family/profile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(profile)
@@ -356,7 +357,7 @@ export const api = {
   },
 
   async addMember(member: FamilyMember): Promise<FamilyMember> {
-    const res = await authenticatedFetch(`${API_URL}/api/family/member`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/family/member`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(member)
@@ -366,7 +367,7 @@ export const api = {
   },
 
   async updateMember(memberId: string, member: FamilyMember): Promise<FamilyMember> {
-    const res = await authenticatedFetch(`${API_URL}/api/family/member/${memberId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/family/member/${memberId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(member)
@@ -376,7 +377,7 @@ export const api = {
   },
 
   async deleteMember(memberId: string): Promise<{ message: string }> {
-    const res = await authenticatedFetch(`${API_URL}/api/family/member/${memberId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/family/member/${memberId}`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to delete member');
@@ -385,7 +386,7 @@ export const api = {
 
   // Recipe endpoints
   async analyzeRecipe(recipeText: string, familyProfile: FamilyProfile): Promise<RecipeAnalysis> {
-    const res = await authenticatedFetch(`${API_URL}/api/recipe/analyze`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/recipe/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -402,7 +403,7 @@ export const api = {
     const formData = new FormData();
     formData.append('file', file);
     
-    const res = await authenticatedFetch(`${API_URL}/api/scan/analyze`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/scan/analyze`, {
       method: 'POST',
       body: formData
     });
@@ -415,13 +416,13 @@ export const api = {
 
   // Pantry endpoints
   async getPantryItems(): Promise<PantryItem[]> {
-    const res = await authenticatedFetch(`${API_URL}/api/pantry/items`);
+    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/items`);
     if (!res.ok) throw new Error('Failed to fetch pantry items');
     return res.json();
   },
 
   async addPantryItem(name: string, category?: string): Promise<PantryItem> {
-    const res = await authenticatedFetch(`${API_URL}/api/pantry/items`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/items`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, category })
@@ -431,21 +432,21 @@ export const api = {
   },
 
   async deletePantryItem(itemId: number): Promise<void> {
-    const res = await authenticatedFetch(`${API_URL}/api/pantry/items/${itemId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/items/${itemId}`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to delete item');
   },
 
   async clearPantry(): Promise<void> {
-    const res = await authenticatedFetch(`${API_URL}/api/pantry/items`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/items`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to clear pantry');
   },
 
   async suggestRecipes(): Promise<RecipeSuggestionsResponse> {
-    const res = await authenticatedFetch(`${API_URL}/api/pantry/suggest-recipes`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/suggest-recipes`, {
       method: 'POST'
     });
     if (!res.ok) {
@@ -457,7 +458,7 @@ export const api = {
 
   // Saved Recipes endpoints
   async getSavedRecipes(favoritesOnly: boolean = false): Promise<SavedRecipesListResponse> {
-    const url = new URL(`${API_URL}/api/recipes/saved`);
+    const url = new URL(`${getApiUrl()}/api/recipes/saved`);
     if (favoritesOnly) {
       url.searchParams.set('favorites_only', 'true');
     }
@@ -467,13 +468,13 @@ export const api = {
   },
 
   async getSavedRecipe(recipeId: string): Promise<SavedRecipe> {
-    const res = await authenticatedFetch(`${API_URL}/api/recipes/saved/${recipeId}`);
+    const res = await authenticatedFetch(`${getApiUrl()}/api/recipes/saved/${recipeId}`);
     if (!res.ok) throw new Error('Failed to fetch recipe');
     return res.json();
   },
 
   async saveRecipe(data: SaveRecipeRequest): Promise<SavedRecipe> {
-    const res = await authenticatedFetch(`${API_URL}/api/recipes/saved`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/recipes/saved`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -486,7 +487,7 @@ export const api = {
   },
 
   async updateSavedRecipe(recipeId: string, data: UpdateRecipeRequest): Promise<SavedRecipe> {
-    const res = await authenticatedFetch(`${API_URL}/api/recipes/saved/${recipeId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/recipes/saved/${recipeId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -499,7 +500,7 @@ export const api = {
   },
 
   async deleteSavedRecipe(recipeId: string): Promise<void> {
-    const res = await authenticatedFetch(`${API_URL}/api/recipes/saved/${recipeId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/recipes/saved/${recipeId}`, {
       method: 'DELETE'
     });
     if (!res.ok) {
@@ -510,19 +511,19 @@ export const api = {
 
   // Shopping List endpoints
   async getShoppingLists(): Promise<ShoppingListsResponse> {
-    const res = await authenticatedFetch(`${API_URL}/api/shopping/lists`);
+    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/lists`);
     if (!res.ok) throw new Error('Failed to fetch shopping lists');
     return res.json();
   },
 
   async getShoppingList(listId: string): Promise<ShoppingList> {
-    const res = await authenticatedFetch(`${API_URL}/api/shopping/lists/${listId}`);
+    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/lists/${listId}`);
     if (!res.ok) throw new Error('Failed to fetch shopping list');
     return res.json();
   },
 
   async createShoppingList(data: CreateShoppingListRequest): Promise<ShoppingList> {
-    const res = await authenticatedFetch(`${API_URL}/api/shopping/lists`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/lists`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -535,7 +536,7 @@ export const api = {
   },
 
   async generateShoppingList(data: GenerateShoppingListRequest): Promise<ShoppingList> {
-    const res = await authenticatedFetch(`${API_URL}/api/shopping/lists/generate`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/lists/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -548,7 +549,7 @@ export const api = {
   },
 
   async addShoppingItem(listId: string, data: AddItemRequest): Promise<ShoppingItem> {
-    const res = await authenticatedFetch(`${API_URL}/api/shopping/lists/${listId}/items`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/lists/${listId}/items`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -561,7 +562,7 @@ export const api = {
   },
 
   async updateShoppingItem(itemId: number, data: UpdateItemRequest): Promise<ShoppingItem> {
-    const res = await authenticatedFetch(`${API_URL}/api/shopping/items/${itemId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/items/${itemId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -574,7 +575,7 @@ export const api = {
   },
 
   async deleteShoppingItem(itemId: number): Promise<void> {
-    const res = await authenticatedFetch(`${API_URL}/api/shopping/items/${itemId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/items/${itemId}`, {
       method: 'DELETE'
     });
     if (!res.ok) {
@@ -584,7 +585,7 @@ export const api = {
   },
 
   async deleteShoppingList(listId: string): Promise<void> {
-    const res = await authenticatedFetch(`${API_URL}/api/shopping/lists/${listId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/lists/${listId}`, {
       method: 'DELETE'
     });
     if (!res.ok) {
@@ -594,7 +595,7 @@ export const api = {
   },
 
   async completeShoppingList(listId: string): Promise<ShoppingList> {
-    const res = await authenticatedFetch(`${API_URL}/api/shopping/lists/${listId}/complete`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/lists/${listId}/complete`, {
       method: 'POST'
     });
     if (!res.ok) {
@@ -606,7 +607,7 @@ export const api = {
 
   // Meal Plan endpoints
   async getMealPlan(week?: string): Promise<MealPlan> {
-    const url = new URL(`${API_URL}/api/meal-plans`);
+    const url = new URL(`${getApiUrl()}/api/meal-plans`);
     if (week) {
       url.searchParams.set('week', week);
     }
@@ -616,7 +617,7 @@ export const api = {
   },
 
   async addPlannedMeal(data: AddMealRequest): Promise<PlannedMeal> {
-    const res = await authenticatedFetch(`${API_URL}/api/meal-plans/meals`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/meal-plans/meals`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -629,7 +630,7 @@ export const api = {
   },
 
   async updatePlannedMeal(mealId: number, data: UpdateMealRequest): Promise<PlannedMeal> {
-    const res = await authenticatedFetch(`${API_URL}/api/meal-plans/meals/${mealId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/meal-plans/meals/${mealId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -642,7 +643,7 @@ export const api = {
   },
 
   async deletePlannedMeal(mealId: number): Promise<void> {
-    const res = await authenticatedFetch(`${API_URL}/api/meal-plans/meals/${mealId}`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/meal-plans/meals/${mealId}`, {
       method: 'DELETE'
     });
     if (!res.ok) {
@@ -652,7 +653,7 @@ export const api = {
   },
 
   async generateShoppingFromPlan(planId: string, data: GenerateShoppingFromPlanRequest): Promise<ShoppingList> {
-    const res = await authenticatedFetch(`${API_URL}/api/meal-plans/${planId}/generate-shopping`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/meal-plans/${planId}/generate-shopping`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -666,7 +667,7 @@ export const api = {
 
   // Barcode endpoints
   async lookupBarcode(barcode: string): Promise<BarcodeProduct> {
-    const res = await authenticatedFetch(`${API_URL}/api/barcode/${barcode}`);
+    const res = await authenticatedFetch(`${getApiUrl()}/api/barcode/${barcode}`);
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.detail || 'Product not found');
@@ -675,7 +676,7 @@ export const api = {
   },
 
   async analyzeBarcode(barcode: string, familyProfile: FamilyProfile): Promise<BarcodeAnalysisResponse> {
-    const res = await authenticatedFetch(`${API_URL}/api/barcode/${barcode}/analyze`, {
+    const res = await authenticatedFetch(`${getApiUrl()}/api/barcode/${barcode}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(familyProfile)
