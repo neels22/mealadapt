@@ -35,13 +35,15 @@ if os.getenv("DEBUG_DB", "false").lower() == "true":
     print(f"🔍 Database URL: {masked_url}")
     print(f"🔍 Schema: {SCHEMA_NAME}")
 
-# Create async engine
+# Create async engine with optimized settings for free tier
 engine = create_async_engine(
     DATABASE_URL,
     echo=os.getenv("SQL_ECHO", "false").lower() == "true",  # Log SQL queries if enabled
     future=True,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=2,  # Reduced from 5 to save memory on free tier
+    max_overflow=3,  # Reduced from 10 to save memory on free tier
+    pool_timeout=30,  # Connection timeout in seconds
+    pool_recycle=3600,  # Recycle connections after 1 hour
 )
 
 # Create async session factory
