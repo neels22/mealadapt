@@ -1394,7 +1394,7 @@ export default function AdaptRecipe() {
       )}
 
       <div className="text-center text-xs text-[#8B7566]">
-        ✨ Powered by Google Gemini AI
+        ✨ Powered by LLM
       </div>
     </div>
   );

@@ -514,7 +514,7 @@ export default function ScanPage() {
 
       {/* Footer */}
       <p className="text-center text-xs text-[var(--text-secondary)]">
-        ✨ Powered by Google Gemini AI & Open Food Facts
+        ✨ Powered by LLM & Open Food Facts
       </p>
     </div>
   );

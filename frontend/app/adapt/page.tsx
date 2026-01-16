@@ -143,7 +143,7 @@ export default function AdaptRecipe() {
 
       {/* Footer */}
       <p className="text-center text-xs text-[var(--text-secondary)]">
-        ✨ Powered by Google Gemini AI
+        ✨ Powered by LLM
       </p>
     </div>
   );
