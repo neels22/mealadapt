@@ -200,7 +200,7 @@ An AI system that:
 - Placeholder: "Type a dish name or paste a full recipe"
 - "Surprise Me" button for random suggestions
 - "Check for My Family" primary CTA
-- "Powered by Google Gemini AI" footer
+- "Powered by LLM" footer
 
 #### My Pantry Screen
 - "Loose Ingredients" input section
