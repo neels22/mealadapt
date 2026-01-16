@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { Search, Camera, Cookie, BookOpen, ShoppingCart, CalendarDays } from 'lucide-react';
 import FamilyProfile from '@/components/FamilyProfile';
 import UserMenu from '@/components/UserMenu';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { api } from '@/lib/api';
 import { FamilyProfile as FamilyProfileType } from '@/lib/types';
 import { useAuth } from '@/components/AuthProvider';
 
-export default function Home() {
+function HomeContent() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<FamilyProfileType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -145,5 +146,13 @@ export default function Home() {
         Powered by LLM
       </p>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <ProtectedRoute>
+      <HomeContent />
+    </ProtectedRoute>
   );
 }
