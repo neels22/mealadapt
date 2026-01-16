@@ -5,7 +5,7 @@ from typing import Any, Type
 from dotenv import load_dotenv
 from pydantic import BaseModel, ValidationError
 
-from google import genai
+import google.genai as genai
 from google.genai import types
 
 from app.models.recipe import RecipeAnalysis
