@@ -9,6 +9,7 @@ from app.models.user import UserCreate, UserLogin, UserUpdate, UserPasswordUpdat
 from app.services.auth_service import auth_service
 from app.middleware.auth import get_current_user_required
 from app.database import get_session
+from app.routes._helpers import bad_request, not_found, server_error
 
 router = APIRouter()
 security = HTTPBearer()
@@ -29,15 +30,9 @@ async def register(
             "token_type": result["token_type"]
         }
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        bad_request(str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Registration failed: {str(e)}"
-        )
+        server_error(f"Registration failed: {str(e)}")
 
 
 @router.post("/login", response_model=dict)
@@ -130,17 +125,11 @@ async def update_me(
         )
         
         if updated_user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+            not_found("User not found")
         
         return updated_user
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        bad_request(str(e))
 
 
 @router.put("/me/password")
@@ -159,17 +148,11 @@ async def change_password(
         )
         
         if not success:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to change password"
-            )
+            bad_request("Failed to change password")
         
         return {"message": "Password changed successfully"}
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        bad_request(str(e))
 
 
 @router.delete("/me")
@@ -181,9 +164,6 @@ async def delete_account(
     success = await auth_service.delete_user_account(session, current_user.id)
     
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete account"
-        )
+        server_error("Failed to delete account")
     
     return {"message": "Account deleted successfully"}
