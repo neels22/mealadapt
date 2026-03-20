@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, Sparkles, Loader2, X } from 'lucide-react';
+import { ArrowLeft, Plus, Sparkles, Loader2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PantryItem, RecipeSuggestionsResponse } from '@/lib/types';
 import RecipeSuggestions from '@/components/RecipeSuggestions';

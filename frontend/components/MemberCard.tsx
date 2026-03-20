@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { FamilyMember, ConditionType, Role, HealthCondition } from '@/lib/types';
 
 interface Props {
