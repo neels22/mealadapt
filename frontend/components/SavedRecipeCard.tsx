@@ -1,4 +1,6 @@
 'use client';
+import { memo } from 'react';
+
 
 import { useState } from 'react';
 import { Heart, Trash2, ChevronDown, ChevronUp, Tag, AlertTriangle, Check, RefreshCw } from 'lucide-react';
@@ -162,7 +164,7 @@ function MemberVerdictCard({ verdict }: { verdict: MemberVerdict }) {
   );
 }
 
-export default function SavedRecipeCard({ recipe, onToggleFavorite, onDelete, onClick }: Props) {
+function SavedRecipeCard({ recipe, onToggleFavorite, onDelete, onClick }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -319,3 +321,5 @@ export default function SavedRecipeCard({ recipe, onToggleFavorite, onDelete, on
     </div>
   );
 }
+
+export default memo(SavedRecipeCard);
