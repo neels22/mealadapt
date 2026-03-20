@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { SavedRecipe } from '@/lib/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import SavedRecipeCard from '@/components/SavedRecipeCard';
+import { RecipeCardSkeleton } from '@/components/Skeleton';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 function RecipesContent() {
@@ -128,8 +129,10 @@ function RecipesContent() {
 
       {/* Recipe List */}
       {loading ? (
-        <div className="card flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-green)]" />
+        <div className="space-y-4">
+          <RecipeCardSkeleton />
+          <RecipeCardSkeleton />
+          <RecipeCardSkeleton />
         </div>
       ) : filteredRecipes.length === 0 ? (
         <div className="card text-center py-12">
