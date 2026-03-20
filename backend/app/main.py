@@ -14,6 +14,7 @@ from app.database import init_db, close_db
 from app.middleware.security import SecurityHeadersMiddleware
 from app.middleware.request_size import RequestSizeLimitMiddleware
 from app.middleware.error_handler import ErrorHandlerMiddleware
+from app.middleware.request_logger import RequestLoggerMiddleware
 
 load_dotenv()
 APP_STARTED_AT = datetime.now(timezone.utc)
@@ -35,6 +36,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Request Logger Middleware (outermost - logs all requests)
+app.add_middleware(RequestLoggerMiddleware)
 
 # Error Handler Middleware (must be first to catch all errors)
 app.add_middleware(ErrorHandlerMiddleware)
