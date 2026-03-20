@@ -1,4 +1,6 @@
 'use client';
+import { memo } from 'react';
+
 
 import { useState } from 'react';
 import MemberCard from './MemberCard';
@@ -11,7 +13,7 @@ interface Props {
   onUpdate: () => void;
 }
 
-export default function FamilyProfile({ profile, onUpdate }: Props) {
+function FamilyProfile({ profile, onUpdate }: Props) {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const handleAddMember = async (member: FamilyMember) => {
@@ -88,3 +90,5 @@ export default function FamilyProfile({ profile, onUpdate }: Props) {
     </div>
   );
 }
+
+export default memo(FamilyProfile);
