@@ -464,6 +464,17 @@ For production deployment instructions, see:
 
 The application can be deployed using Docker Compose with PostgreSQL support.
 
+## CI/CD Pipelines
+
+This repository now includes GitHub Actions workflows for quality and delivery:
+
+- `backend-ci.yml` runs backend dependency install and syntax checks on backend changes.
+- `frontend-ci.yml` runs frontend lint + build on frontend changes.
+- `security-audit.yml` runs weekly Python and npm dependency audits.
+- `backend-cd.yml` triggers Render deploy hooks on `main` updates when configured.
+- `frontend-cd.yml` triggers Vercel deploy hooks on `main` updates when configured.
+- `keep-alive.yml` periodically pings the backend health endpoint to avoid cold starts.
+
 ## Troubleshooting
 
 ### Backend won't start
