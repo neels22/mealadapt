@@ -197,6 +197,7 @@ export default function ScanPage() {
                   capture="environment"
                   onChange={handleFileSelect}
                   className="hidden"
+                  aria-label="Upload ingredient label image"
                 />
                 <div className="flex flex-col items-center gap-4">
                   <div className="flex gap-4">
