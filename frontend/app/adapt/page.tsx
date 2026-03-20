@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { validateRecipeText } from '@/lib/validation';
 import RecipeAnalysisDisplay from '@/components/RecipeAnalysisDisplay';
 import { RecipeAnalysis, FamilyProfile } from '@/lib/types';
+
+const MAX_RECIPE_LENGTH = 15000;
 
 const SAMPLE_RECIPES = [
   'Spaghetti Carbonara with eggs, bacon, parmesan cheese, and black pepper',
@@ -40,6 +43,12 @@ export default function AdaptRecipe() {
 
   const handleAnalyze = async () => {
     if (!recipe.trim() || !profile) return;
+
+    const validationError = validateRecipeText(recipe);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -89,10 +98,20 @@ export default function AdaptRecipe() {
         </label>
         <textarea
           value={recipe}
-          onChange={(e) => setRecipe(e.target.value)}
+          onChange={(e) => {
+            if (e.target.value.length <= MAX_RECIPE_LENGTH) {
+              setRecipe(e.target.value);
+            }
+          }}
           placeholder="Type a dish name (e.g., 'chicken curry', 'pasta carbonara') or paste a full recipe with ingredients..."
           className="w-full h-48 p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--accent-green)] resize-none text-[var(--text-primary)]"
+          maxLength={MAX_RECIPE_LENGTH}
         />
+        <div className="flex justify-end mt-1">
+          <span className={`text-xs ${recipe.length > MAX_RECIPE_LENGTH * 0.9 ? 'text-red-500' : 'text-[var(--text-secondary)]'}`}>
+            {recipe.length.toLocaleString()}/{MAX_RECIPE_LENGTH.toLocaleString()}
+          </span>
+        </div>
         
         <div className="mt-4 flex gap-3">
           <button
