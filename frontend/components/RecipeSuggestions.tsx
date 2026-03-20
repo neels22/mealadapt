@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { RecipeSuggestionsResponse, RecipeSuggestion } from '@/lib/types';
 import { Clock, ChefHat, Star, CheckCircle2, ShoppingCart } from 'lucide-react';
 
@@ -89,7 +90,7 @@ function RecipeCard({ recipe }: { recipe: RecipeSuggestion }) {
   );
 }
 
-export default function RecipeSuggestions({ suggestions }: Props) {
+function RecipeSuggestions({ suggestions }: Props) {
   return (
     <div className="card space-y-6">
       <div className="flex items-center gap-2">
@@ -118,3 +119,5 @@ export default function RecipeSuggestions({ suggestions }: Props) {
     </div>
   );
 }
+
+export default memo(RecipeSuggestions);
