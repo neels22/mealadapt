@@ -85,7 +85,19 @@
 
 ---
 
-## Slide 9: Thank You & Q&A
+## Slide 9: Team Contributions
+
+| Team Member | Area | What They Built |
+|-------------|------|-----------------|
+| **Indraneel Sarode** | Database, Infra & Core | 14 SQLModel tables, CRUD layer, Docker setup, CI/CD, API client, shared types, error handling, deployment |
+| **Jahnavi Kedia** | Family Profiles & Recipe AI | Family member CRUD, health condition profiles, Gemini recipe analysis with scope gate, per-member verdicts UI |
+| **Harishita Gupta** | Scan, Barcode & Pantry | Gemini Vision label scanning, Open Food Facts barcode lookup, pantry tracking, recipe suggestions from ingredients |
+| **Ashish Bhusal** | Meal Planner & Shopping | Weekly meal calendar, saved recipes with favorites, auto-generated shopping lists, shopping item management |
+| **Nishan Paudel** | Auth & User Management | JWT auth (register, login, refresh tokens), password hashing, route protection, rate limiting, login/signup UI |
+
+---
+
+## Slide 10: Thank You & Q&A
 
 - **MealAdapt** — One kitchen. Many needs.
 - Next.js + FastAPI + Google Gemini AI
