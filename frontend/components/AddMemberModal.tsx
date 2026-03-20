@@ -1,4 +1,6 @@
 'use client';
+import { memo } from 'react';
+
 
 import { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
@@ -11,7 +13,7 @@ interface Props {
 
 const AVATARS = ['😊', '👨', '👩', '👴', '👵', '👦', '👧', '👶', '🧑', '👱'];
 
-export default function AddMemberModal({ onClose, onAdd }: Props) {
+function AddMemberModal({ onClose, onAdd }: Props) {
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('😊');
   const [role, setRole] = useState<Role>(Role.ADULT);
@@ -224,3 +226,5 @@ export default function AddMemberModal({ onClose, onAdd }: Props) {
     </div>
   );
 }
+
+export default memo(AddMemberModal);
