@@ -393,61 +393,71 @@ export const api = {
 
   // Family endpoints
   async getFamilyProfile(): Promise<FamilyProfile> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/family/profile`);
-    if (!res.ok) throw new Error('Failed to fetch profile');
-    return res.json();
+    return requestJson<FamilyProfile>(
+      `${getApiUrl()}/api/family/profile`,
+      { method: 'GET' },
+      'Failed to fetch profile'
+    );
   },
 
   async createFamilyProfile(profile: FamilyProfile): Promise<FamilyProfile> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/family/profile`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(profile)
-    });
-    if (!res.ok) throw new Error('Failed to create profile');
-    return res.json();
+    return requestJson<FamilyProfile>(
+      `${getApiUrl()}/api/family/profile`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile)
+      },
+      'Failed to create profile'
+    );
   },
 
   async addMember(member: FamilyMember): Promise<FamilyMember> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/family/member`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(member)
-    });
-    if (!res.ok) throw new Error('Failed to add member');
-    return res.json();
+    return requestJson<FamilyMember>(
+      `${getApiUrl()}/api/family/member`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(member)
+      },
+      'Failed to add member'
+    );
   },
 
   async updateMember(memberId: string, member: FamilyMember): Promise<FamilyMember> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/family/member/${memberId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(member)
-    });
-    if (!res.ok) throw new Error('Failed to update member');
-    return res.json();
+    return requestJson<FamilyMember>(
+      `${getApiUrl()}/api/family/member/${memberId}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(member)
+      },
+      'Failed to update member'
+    );
   },
 
   async deleteMember(memberId: string): Promise<{ message: string }> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/family/member/${memberId}`, {
-      method: 'DELETE'
-    });
-    if (!res.ok) throw new Error('Failed to delete member');
-    return res.json();
+    return requestJson<{ message: string }>(
+      `${getApiUrl()}/api/family/member/${memberId}`,
+      { method: 'DELETE' },
+      'Failed to delete member'
+    );
   },
 
   // Recipe endpoints
   async analyzeRecipe(recipeText: string, familyProfile: FamilyProfile): Promise<RecipeAnalysis> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/recipe/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipe_text: recipeText,
-        family_profile: familyProfile
-      })
-    });
-    if (!res.ok) throw new Error('Failed to analyze recipe');
-    return res.json();
+    return requestJson<RecipeAnalysis>(
+      `${getApiUrl()}/api/recipe/analyze`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipe_text: recipeText,
+          family_profile: familyProfile
+        })
+      },
+      'Failed to analyze recipe'
+    );
   },
 
   // Scan endpoints
@@ -464,44 +474,47 @@ export const api = {
 
   // Pantry endpoints
   async getPantryItems(): Promise<PantryItem[]> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/items`);
-    if (!res.ok) throw new Error('Failed to fetch pantry items');
-    return res.json();
+    return requestJson<PantryItem[]>(
+      `${getApiUrl()}/api/pantry/items`,
+      { method: 'GET' },
+      'Failed to fetch pantry items'
+    );
   },
 
   async addPantryItem(name: string, category?: string): Promise<PantryItem> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/items`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, category })
-    });
-    if (!res.ok) throw new Error('Failed to add item');
-    return res.json();
+    return requestJson<PantryItem>(
+      `${getApiUrl()}/api/pantry/items`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category })
+      },
+      'Failed to add item'
+    );
   },
 
   async deletePantryItem(itemId: number): Promise<void> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/items/${itemId}`, {
-      method: 'DELETE'
-    });
-    if (!res.ok) throw new Error('Failed to delete item');
+    await requestVoid(
+      `${getApiUrl()}/api/pantry/items/${itemId}`,
+      { method: 'DELETE' },
+      'Failed to delete item'
+    );
   },
 
   async clearPantry(): Promise<void> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/items`, {
-      method: 'DELETE'
-    });
-    if (!res.ok) throw new Error('Failed to clear pantry');
+    await requestVoid(
+      `${getApiUrl()}/api/pantry/items`,
+      { method: 'DELETE' },
+      'Failed to clear pantry'
+    );
   },
 
   async suggestRecipes(): Promise<RecipeSuggestionsResponse> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/pantry/suggest-recipes`, {
-      method: 'POST'
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to get suggestions');
-    }
-    return res.json();
+    return requestJson<RecipeSuggestionsResponse>(
+      `${getApiUrl()}/api/pantry/suggest-recipes`,
+      { method: 'POST' },
+      'Failed to get suggestions'
+    );
   },
 
   // Saved Recipes endpoints
