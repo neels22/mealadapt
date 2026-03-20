@@ -219,58 +219,103 @@ const authenticatedFetch = async (
   return res;
 };
 
+const normalizeNetworkError = (error: unknown): never => {
+  if (error instanceof Error) {
+    if (error.message.includes('timeout')) {
+      throw new Error('Request timed out. Please check your connection and try again.');
+    }
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      throw new Error('Network error. Please check your internet connection.');
+    }
+  }
+
+  throw error;
+};
+
+const extractErrorMessage = async (res: Response, fallbackMessage: string): Promise<string> => {
+  try {
+    const errorPayload = await res.json();
+    if (typeof errorPayload?.detail === 'string') {
+      return errorPayload.detail;
+    }
+    if (typeof errorPayload?.message === 'string') {
+      return errorPayload.message;
+    }
+    return fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+};
+
+const requestJson = async <T>(
+  url: string,
+  options: RequestInit,
+  fallbackMessage: string,
+  authenticated: boolean = true
+): Promise<T> => {
+  let res: Response | undefined;
+  try {
+    res = authenticated
+      ? await authenticatedFetch(url, options)
+      : await fetchWithTimeout(url, options);
+  } catch (error) {
+    normalizeNetworkError(error);
+  }
+
+  if (!res) {
+    throw new Error(fallbackMessage);
+  }
+
+  if (!res.ok) {
+    throw new Error(await extractErrorMessage(res, fallbackMessage));
+  }
+
+  return res.json();
+};
+
+const requestVoid = async (
+  url: string,
+  options: RequestInit,
+  fallbackMessage: string
+): Promise<void> => {
+  const res = await authenticatedFetch(url, options);
+  if (!res.ok) {
+    throw new Error(await extractErrorMessage(res, fallbackMessage));
+  }
+};
+
 export const api = {
   // Auth endpoints
   async register(data: RegisterData): Promise<AuthResponse> {
-    try {
-      const res = await fetchWithTimeout(`${getApiUrl()}/api/auth/register`, {
+    const result = await requestJson<AuthResponse>(
+      `${getApiUrl()}/api/auth/register`,
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.detail || 'Registration failed');
-      }
-      const result = await res.json();
-      setToken(result.access_token);
-      setRefreshToken(result.refresh_token);
-      return result;
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('timeout')) {
-        throw new Error('Request timed out. Please check your connection and try again.');
-      }
-      if (error instanceof Error && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
-        throw new Error('Network error. Please check your internet connection.');
-      }
-      throw error;
-    }
+      },
+      'Registration failed',
+      false
+    );
+    setToken(result.access_token);
+    setRefreshToken(result.refresh_token);
+    return result;
   },
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    try {
-      const res = await fetchWithTimeout(`${getApiUrl()}/api/auth/login`, {
+    const result = await requestJson<AuthResponse>(
+      `${getApiUrl()}/api/auth/login`,
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.detail || 'Invalid email or password');
-      }
-      const result = await res.json();
-      setToken(result.access_token);
-      setRefreshToken(result.refresh_token);
-      return result;
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('timeout')) {
-        throw new Error('Request timed out. Please check your connection and try again.');
-      }
-      if (error instanceof Error && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
-        throw new Error('Network error. Please check your internet connection.');
-      }
-      throw error;
-    }
+      },
+      'Invalid email or password',
+      false
+    );
+    setToken(result.access_token);
+    setRefreshToken(result.refresh_token);
+    return result;
   },
 
   async logout(): Promise<void> {
@@ -304,38 +349,35 @@ export const api = {
   },
 
   async updateProfile(data: UserUpdate): Promise<User> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/auth/me`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to update profile');
-    }
-    return res.json();
+    return requestJson<User>(
+      `${getApiUrl()}/api/auth/me`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      'Failed to update profile'
+    );
   },
 
   async changePassword(data: PasswordUpdate): Promise<void> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/auth/me/password`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to change password');
-    }
+    await requestVoid(
+      `${getApiUrl()}/api/auth/me/password`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      'Failed to change password'
+    );
   },
 
   async deleteAccount(): Promise<void> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/auth/me`, {
-      method: 'DELETE'
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to delete account');
-    }
+    await requestVoid(
+      `${getApiUrl()}/api/auth/me`,
+      { method: 'DELETE' },
+      'Failed to delete account'
+    );
     removeAllTokens();
   },
 
@@ -403,15 +445,11 @@ export const api = {
     const formData = new FormData();
     formData.append('file', file);
     
-    const res = await authenticatedFetch(`${getApiUrl()}/api/scan/analyze`, {
-      method: 'POST',
-      body: formData
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to scan ingredients');
-    }
-    return res.json();
+    return requestJson<ScanResult>(
+      `${getApiUrl()}/api/scan/analyze`,
+      { method: 'POST', body: formData },
+      'Failed to scan ingredients'
+    );
   },
 
   // Pantry endpoints
@@ -474,39 +512,35 @@ export const api = {
   },
 
   async saveRecipe(data: SaveRecipeRequest): Promise<SavedRecipe> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/recipes/saved`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to save recipe');
-    }
-    return res.json();
+    return requestJson<SavedRecipe>(
+      `${getApiUrl()}/api/recipes/saved`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      'Failed to save recipe'
+    );
   },
 
   async updateSavedRecipe(recipeId: string, data: UpdateRecipeRequest): Promise<SavedRecipe> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/recipes/saved/${recipeId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to update recipe');
-    }
-    return res.json();
+    return requestJson<SavedRecipe>(
+      `${getApiUrl()}/api/recipes/saved/${recipeId}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      'Failed to update recipe'
+    );
   },
 
   async deleteSavedRecipe(recipeId: string): Promise<void> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/recipes/saved/${recipeId}`, {
-      method: 'DELETE'
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to delete recipe');
-    }
+    await requestVoid(
+      `${getApiUrl()}/api/recipes/saved/${recipeId}`,
+      { method: 'DELETE' },
+      'Failed to delete recipe'
+    );
   },
 
   // Shopping List endpoints
@@ -523,29 +557,27 @@ export const api = {
   },
 
   async createShoppingList(data: CreateShoppingListRequest): Promise<ShoppingList> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/lists`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to create shopping list');
-    }
-    return res.json();
+    return requestJson<ShoppingList>(
+      `${getApiUrl()}/api/shopping/lists`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      'Failed to create shopping list'
+    );
   },
 
   async generateShoppingList(data: GenerateShoppingListRequest): Promise<ShoppingList> {
-    const res = await authenticatedFetch(`${getApiUrl()}/api/shopping/lists/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to generate shopping list');
-    }
-    return res.json();
+    return requestJson<ShoppingList>(
+      `${getApiUrl()}/api/shopping/lists/generate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      'Failed to generate shopping list'
+    );
   },
 
   async addShoppingItem(listId: string, data: AddItemRequest): Promise<ShoppingItem> {
