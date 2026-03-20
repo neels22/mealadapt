@@ -6,6 +6,21 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
+function getPasswordStrength(password: string): { level: number; label: string; color: string } {
+  if (!password) return { level: 0, label: '', color: '' };
+  let score = 0;
+  if (password.length >= 6) score++;
+  if (password.length >= 10) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  if (score <= 1) return { level: 1, label: 'Weak', color: 'bg-red-500' };
+  if (score <= 2) return { level: 2, label: 'Fair', color: 'bg-orange-500' };
+  if (score <= 3) return { level: 3, label: 'Good', color: 'bg-yellow-500' };
+  return { level: 4, label: 'Strong', color: 'bg-green-500' };
+}
+
 export default function SignupPage() {
   const router = useRouter();
   const { register, isAuthenticated, loading } = useAuth();
@@ -140,7 +155,26 @@ export default function SignupPage() {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">At least 6 characters</p>
+            {password && (
+              <div className="mt-2">
+                <div className="flex gap-1 mb-1">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-1 flex-1 rounded-full transition-colors ${
+                        i <= getPasswordStrength(password).level
+                          ? getPasswordStrength(password).color
+                          : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Password strength: {getPasswordStrength(password).label}
+                </p>
+              </div>
+            )}
+            {!password && <p className="text-xs text-[var(--text-secondary)] mt-1">At least 6 characters</p>}
           </div>
 
           <div>
