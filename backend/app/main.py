@@ -3,6 +3,7 @@ MainMeal API - AI-powered recipe adaptation for family dietary needs.
 FastAPI application with PostgreSQL backend using SQLModel.
 """
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -15,6 +16,7 @@ from app.middleware.request_size import RequestSizeLimitMiddleware
 from app.middleware.error_handler import ErrorHandlerMiddleware
 
 load_dotenv()
+APP_STARTED_AT = datetime.now(timezone.utc)
 
 
 @asynccontextmanager
@@ -78,3 +80,14 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/health/detailed")
+async def detailed_health_check():
+    """Detailed health endpoint for observability and CI smoke checks."""
+    return {
+        "status": "healthy",
+        "service": "mainmeal-backend",
+        "version": "1.0.0",
+        "started_at": APP_STARTED_AT.isoformat()
+    }
