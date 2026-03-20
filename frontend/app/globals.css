@@ -21,6 +21,7 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+/*.Correcting git commits.*/
 /* Card Component */
 .card {
   background-color: var(--card-bg);

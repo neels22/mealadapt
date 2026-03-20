@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { 
-  ArrowLeft, 
-  Plus, 
-  Trash2, 
-  Check, 
-  ShoppingCart, 
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Check,
+  ShoppingCart,
   Loader2,
   Sparkles,
   ChevronDown,
@@ -82,7 +82,7 @@ function ShoppingContent() {
 
   const handleToggleItem = async (listId: string, item: ShoppingItem) => {
     if (!item.id) return;
-    
+
     try {
       const updated = await api.updateShoppingItem(item.id, { is_checked: !item.is_checked });
       setLists(lists.map(list => {
@@ -122,7 +122,7 @@ function ShoppingContent() {
 
   const handleAddItem = async (listId: string, ingredient: string) => {
     if (!ingredient.trim()) return;
-    
+
     try {
       const item = await api.addShoppingItem(listId, { ingredient: ingredient.trim() });
       setLists(lists.map(list => {
@@ -144,7 +144,7 @@ function ShoppingContent() {
 
   const handleDeleteList = async (listId: string) => {
     if (!confirm('Delete this shopping list?')) return;
-    
+
     try {
       await api.deleteShoppingList(listId);
       setLists(lists.filter(l => l.id !== listId));
@@ -171,8 +171,8 @@ function ShoppingContent() {
   return (
     <div className="space-y-6">
       {/* Back Link */}
-      <Link 
-        href="/" 
+      <Link
+        href="/"
         className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
       >
         <ArrowLeft className="w-5 h-5" />
@@ -225,11 +225,11 @@ function ShoppingContent() {
             const groupedItems = groupItemsByCategory(list.items);
             const checkedCount = list.items.filter(i => i.is_checked).length;
             const totalCount = list.items.length;
-            
+
             return (
               <div key={list.id} className="card">
                 {/* List Header */}
-                <div 
+                <div
                   className="flex items-center justify-between cursor-pointer"
                   onClick={() => toggleListExpanded(list.id)}
                 >
@@ -260,7 +260,7 @@ function ShoppingContent() {
                 {/* Progress Bar */}
                 {totalCount > 0 && (
                   <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-[var(--accent-green)] transition-all"
                       style={{ width: `${(checkedCount / totalCount) * 100}%` }}
                     />
@@ -300,19 +300,17 @@ function ShoppingContent() {
                         </div>
                         <div className="space-y-2">
                           {items.map(item => (
-                            <div 
+                            <div
                               key={item.id}
-                              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                                item.is_checked ? 'bg-gray-50' : 'bg-[var(--background)]'
-                              }`}
+                              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${item.is_checked ? 'bg-gray-50' : 'bg-[var(--background)]'
+                                }`}
                             >
                               <button
                                 onClick={() => handleToggleItem(list.id, item)}
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                  item.is_checked 
-                                    ? 'bg-[var(--accent-green)] border-[var(--accent-green)]' 
+                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${item.is_checked
+                                    ? 'bg-[var(--accent-green)] border-[var(--accent-green)]'
                                     : 'border-gray-300 hover:border-[var(--accent-green)]'
-                                }`}
+                                  }`}
                               >
                                 {item.is_checked && <Check className="w-4 h-4 text-white" />}
                               </button>
@@ -353,8 +351,8 @@ function ShoppingContent() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <CreateListModal 
-          onClose={() => setShowCreateModal(false)} 
+        <CreateListModal
+          onClose={() => setShowCreateModal(false)}
           onCreate={(list) => {
             setLists([list, ...lists]);
             setExpandedLists(new Set([list.id, ...expandedLists]));
@@ -365,8 +363,8 @@ function ShoppingContent() {
 
       {/* Generate Modal */}
       {showGenerateModal && (
-        <GenerateListModal 
-          onClose={() => setShowGenerateModal(false)} 
+        <GenerateListModal
+          onClose={() => setShowGenerateModal(false)}
           onGenerate={(list) => {
             setLists([list, ...lists]);
             setExpandedLists(new Set([list.id, ...expandedLists]));
@@ -384,11 +382,11 @@ function ShoppingContent() {
 }
 
 // Create List Modal
-function CreateListModal({ 
-  onClose, 
-  onCreate 
-}: { 
-  onClose: () => void; 
+function CreateListModal({
+  onClose,
+  onCreate
+}: {
+  onClose: () => void;
   onCreate: (list: ShoppingList) => void;
 }) {
   const [name, setName] = useState('');
@@ -396,7 +394,7 @@ function CreateListModal({
 
   const handleCreate = async () => {
     if (!name.trim()) return;
-    
+
     setLoading(true);
     try {
       const list = await api.createShoppingList({ name: name.trim() });
@@ -426,8 +424,8 @@ function CreateListModal({
           <button onClick={onClose} className="btn-secondary flex-1">
             Cancel
           </button>
-          <button 
-            onClick={handleCreate} 
+          <button
+            onClick={handleCreate}
             disabled={loading || !name.trim()}
             className="btn-primary flex-1 disabled:opacity-50"
           >
@@ -440,11 +438,11 @@ function CreateListModal({
 }
 
 // Generate List Modal
-function GenerateListModal({ 
-  onClose, 
-  onGenerate 
-}: { 
-  onClose: () => void; 
+function GenerateListModal({
+  onClose,
+  onGenerate
+}: {
+  onClose: () => void;
   onGenerate: (list: ShoppingList) => void;
 }) {
   const [name, setName] = useState('');
@@ -461,7 +459,7 @@ function GenerateListModal({
   const getListName = () => {
     if (name.trim()) return name.trim();
     if (selectedIds.size === 0) return '';
-    
+
     const selectedRecipes = recipes.filter(r => selectedIds.has(r.id));
     if (selectedRecipes.length === 1) {
       return `${selectedRecipes[0].dish_name} Shopping`;
@@ -496,7 +494,7 @@ function GenerateListModal({
 
   const handleGenerate = async () => {
     if (!effectiveName || selectedIds.size === 0) return;
-    
+
     setGenerating(true);
     try {
       const list = await api.generateShoppingList({
@@ -518,7 +516,7 @@ function GenerateListModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="card max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
         <h3 className="text-xl font-bold mb-4">Generate from Recipes</h3>
-        
+
         <input
           type="text"
           value={name}
@@ -542,21 +540,19 @@ function GenerateListModal({
             </p>
           ) : (
             recipes.map(recipe => (
-              <div 
+              <div
                 key={recipe.id}
                 onClick={() => toggleRecipe(recipe.id)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors border-2 ${
-                  selectedIds.has(recipe.id)
+                className={`p-3 rounded-lg cursor-pointer transition-colors border-2 ${selectedIds.has(recipe.id)
                     ? 'border-[var(--accent-green)] bg-green-50'
                     : 'border-transparent bg-[var(--background)] hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                    selectedIds.has(recipe.id)
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedIds.has(recipe.id)
                       ? 'bg-[var(--accent-green)] border-[var(--accent-green)]'
                       : 'border-gray-300'
-                  }`}>
+                    }`}>
                     {selectedIds.has(recipe.id) && <Check className="w-3 h-3 text-white" />}
                   </div>
                   <span className="font-medium">{recipe.dish_name}</span>
@@ -570,8 +566,8 @@ function GenerateListModal({
           <button onClick={onClose} className="btn-secondary flex-1">
             Cancel
           </button>
-          <button 
-            onClick={handleGenerate} 
+          <button
+            onClick={handleGenerate}
             disabled={generating || selectedIds.size === 0}
             className="btn-primary flex-1 disabled:opacity-50 flex items-center justify-center gap-2"
           >
