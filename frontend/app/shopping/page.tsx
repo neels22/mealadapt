@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -43,24 +43,19 @@ function getCategoryLabel(category?: string) {
 function ShoppingContent() {
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedList, setSelectedList] = useState<ShoppingList | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [newItemInput, setNewItemInput] = useState('');
   const [expandedLists, setExpandedLists] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    loadLists();
-  }, []);
-
-  const loadLists = async () => {
+  const loadLists = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.getShoppingLists();
       setLists(response.lists);
       // Auto-expand first list if exists
-      if (response.lists.length > 0 && expandedLists.size === 0) {
-        setExpandedLists(new Set([response.lists[0].id]));
+      if (response.lists.length > 0) {
+        setExpandedLists((prev) => (prev.size === 0 ? new Set([response.lists[0].id]) : prev));
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
@@ -69,7 +64,11 @@ function ShoppingContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadLists();
+  }, [loadLists]);
 
   const toggleListExpanded = (listId: string) => {
     const newExpanded = new Set(expandedLists);

@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Camera, Upload, Loader2, X, Barcode, Image, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowLeft, Camera, Upload, Loader2, X, Barcode, ImageIcon, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { ScanResult, BarcodeProduct, BarcodeAnalysisResponse, FamilyProfile } from '@/lib/types';
 import ScanResultDisplay from '@/components/ScanResultDisplay';
@@ -162,7 +163,7 @@ export default function ScanPage() {
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <Image className="w-4 h-4" />
+          <ImageIcon className="w-4 h-4" />
           Scan Label
         </button>
         <button
@@ -217,9 +218,11 @@ export default function ScanPage() {
             ) : (
               <div className="space-y-4">
                 <div className="relative">
-                  <img
+                  <Image
                     src={preview}
                     alt="Selected ingredient label"
+                    width={800}
+                    height={400}
                     className="w-full rounded-xl max-h-64 object-contain bg-gray-100"
                   />
                   <button
@@ -298,9 +301,11 @@ export default function ScanPage() {
             <div className="card space-y-4">
               <div className="flex items-start gap-4">
                 {barcodeProduct.image_url && (
-                  <img
+                  <Image
                     src={barcodeProduct.image_url}
                     alt={barcodeProduct.name}
+                    width={96}
+                    height={96}
                     className="w-24 h-24 rounded-lg object-cover bg-gray-100"
                   />
                 )}
