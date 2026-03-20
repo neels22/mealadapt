@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Heart, Search, Loader2, BookOpen } from 'lucide-react';
 import { api } from '@/lib/api';
 import { SavedRecipe } from '@/lib/types';
+import { useDebounce } from '@/hooks/useDebounce';
 import SavedRecipeCard from '@/components/SavedRecipeCard';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -13,6 +14,7 @@ function RecipesContent() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery);
 
   const loadRecipes = useCallback(async () => {
     try {
@@ -57,10 +59,10 @@ function RecipesContent() {
     }
   };
 
-  // Filter recipes by search query
-  const filteredRecipes = recipes.filter(recipe => 
-    recipe.dish_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    recipe.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Filter recipes by debounced search query
+  const filteredRecipes = recipes.filter(recipe =>
+    recipe.dish_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    recipe.tags.some(tag => tag.toLowerCase().includes(debouncedSearch.toLowerCase()))
   );
 
   return (
