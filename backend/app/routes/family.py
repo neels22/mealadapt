@@ -1,7 +1,7 @@
 """
 Family profile and member management routes.
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,7 @@ from app.models.user import User
 from app.middleware.auth import get_current_user
 from app.database import get_session
 from app import crud
+from app.routes._helpers import not_found
 
 router = APIRouter()
 
@@ -135,7 +136,7 @@ async def update_member(
     )
     
     if not updated:
-        raise HTTPException(status_code=404, detail="Member not found")
+        not_found("Member not found")
     
     return member_to_response(updated)
 
@@ -148,5 +149,5 @@ async def delete_member(
     """Delete a family member"""
     deleted = await crud.delete_member(session, member_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Member not found")
+        not_found("Member not found")
     return {"message": "Member deleted successfully"}

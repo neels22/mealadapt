@@ -1,7 +1,7 @@
 """
 Shopping list management routes.
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from typing import List
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,11 +16,12 @@ from app.models.shopping import (
     ShoppingListsResponse
 )
 from app import crud
-from app.services.ai_service import ai_service, AIBlocked, AIOutOfScope, AIInvalidOutput
+from app.services.ai_service import ai_service, AIBlocked, AIInvalidOutput, AIOutOfScope
 from app.middleware.auth import get_current_user
 from app.middleware.rate_limit import check_ai_rate_limit
 from app.models.user import User
 from app.database import get_session
+from app.routes._helpers import bad_request, not_found, raise_for_ai_error, server_error
 
 router = APIRouter()
 
@@ -72,7 +73,7 @@ async def get_list(
     shopping_list = await crud.get_shopping_list_by_id(session, list_id, user.id)
     
     if not shopping_list:
-        raise HTTPException(status_code=404, detail="Shopping list not found")
+        not_found("Shopping list not found")
     
     return list_to_response(shopping_list)
 
@@ -126,7 +127,7 @@ async def generate_list_from_recipes(
             })
     
     if not recipes:
-        raise HTTPException(status_code=400, detail="No valid recipes found")
+        bad_request("No valid recipes found")
     
     try:
         # Use AI to extract ingredients
@@ -153,16 +154,12 @@ async def generate_list_from_recipes(
         )
         
         return list_to_response(shopping_list)
-    except AIOutOfScope as e:
-        raise HTTPException(status_code=400, detail={"error": "out_of_scope", "message": str(e)})
-    except AIBlocked as e:
-        raise HTTPException(status_code=422, detail={"error": "blocked", "message": str(e)})
-    except AIInvalidOutput as e:
-        raise HTTPException(status_code=502, detail={"error": "invalid_model_output", "message": str(e)})
+    except (AIOutOfScope, AIBlocked, AIInvalidOutput) as e:
+        raise_for_ai_error(e)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        bad_request(str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate shopping list: {str(e)}")
+        server_error(f"Failed to generate shopping list: {str(e)}")
 
 
 @router.post("/lists/{list_id}/items", response_model=ShoppingItem)
@@ -183,7 +180,7 @@ async def add_item(
     )
     
     if not item:
-        raise HTTPException(status_code=404, detail="Shopping list not found")
+        not_found("Shopping list not found")
     
     return ShoppingItem(
         id=item.id,
@@ -211,7 +208,7 @@ async def update_item(
     )
     
     if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
+        not_found("Item not found")
     
     return ShoppingItem(
         id=item.id,
@@ -232,7 +229,7 @@ async def remove_item(
     success = await crud.delete_shopping_item(session, item_id, user.id)
     
     if not success:
-        raise HTTPException(status_code=404, detail="Item not found")
+        not_found("Item not found")
     
     return {"message": "Item deleted successfully"}
 
@@ -247,7 +244,7 @@ async def remove_list(
     success = await crud.delete_shopping_list(session, list_id, user.id)
     
     if not success:
-        raise HTTPException(status_code=404, detail="Shopping list not found")
+        not_found("Shopping list not found")
     
     return {"message": "Shopping list deleted successfully"}
 
@@ -262,6 +259,6 @@ async def mark_complete(
     shopping_list = await crud.complete_shopping_list(session, list_id, user.id)
     
     if not shopping_list:
-        raise HTTPException(status_code=404, detail="Shopping list not found")
+        not_found("Shopping list not found")
     
     return list_to_response(shopping_list)

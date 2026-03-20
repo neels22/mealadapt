@@ -1,7 +1,7 @@
 """
 Saved recipes management routes.
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from typing import Optional
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,7 @@ from app import crud
 from app.middleware.auth import get_current_user
 from app.models.user import User
 from app.database import get_session
+from app.routes._helpers import not_found
 
 router = APIRouter()
 
@@ -61,7 +62,7 @@ async def get_recipe(
     recipe = await crud.get_saved_recipe_by_id(session, recipe_id, user.id)
     
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        not_found("Recipe not found")
     
     return recipe_to_response(recipe)
 
@@ -107,7 +108,7 @@ async def update_recipe(
     )
     
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        not_found("Recipe not found")
     
     return recipe_to_response(recipe)
 
@@ -122,6 +123,6 @@ async def delete_recipe(
     success = await crud.delete_saved_recipe(session, recipe_id, user.id)
     
     if not success:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        not_found("Recipe not found")
     
     return {"message": "Recipe deleted successfully"}
