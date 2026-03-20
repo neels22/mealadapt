@@ -303,3 +303,10 @@ export interface BarcodeAnalysisResponse {
   safe_for_all: string[];
   recommendations: string[];
 }
+
+export interface ApiHealthStatus {
+  status: string;
+  service: string;
+  version: string;
+  started_at: string;
+}

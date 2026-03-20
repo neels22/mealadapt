@@ -28,7 +28,8 @@ import {
   UpdateMealRequest,
   GenerateShoppingFromPlanRequest,
   BarcodeProduct,
-  BarcodeAnalysisResponse
+  BarcodeAnalysisResponse,
+  ApiHealthStatus
 } from './types';
 
 // Get API URL - allow build to proceed without it, but validate at runtime
@@ -285,6 +286,15 @@ const requestVoid = async (
 };
 
 export const api = {
+  async getApiHealth(): Promise<ApiHealthStatus> {
+    return requestJson<ApiHealthStatus>(
+      `${getApiUrl()}/health/detailed`,
+      { method: 'GET' },
+      'Failed to fetch API health',
+      false
+    );
+  },
+
   // Auth endpoints
   async register(data: RegisterData): Promise<AuthResponse> {
     const result = await requestJson<AuthResponse>(
