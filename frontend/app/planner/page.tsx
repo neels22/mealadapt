@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -10,7 +10,6 @@ import {
   X,
   Loader2,
   ShoppingCart,
-  Calendar,
   Utensils
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -52,12 +51,7 @@ function PlannerContent() {
   const [generatingList, setGeneratingList] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<PlannedMeal | null>(null);
 
-  useEffect(() => {
-    loadPlan();
-    loadRecipes();
-  }, [currentWeek]);
-
-  const loadPlan = async () => {
+  const loadPlan = useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.getMealPlan(formatDate(currentWeek));
@@ -69,9 +63,9 @@ function PlannerContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentWeek]);
 
-  const loadRecipes = async () => {
+  const loadRecipes = useCallback(async () => {
     try {
       const response = await api.getSavedRecipes();
       setRecipes(response.recipes);
@@ -80,7 +74,12 @@ function PlannerContent() {
         console.error('Failed to load recipes:', error);
       }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadPlan();
+    loadRecipes();
+  }, [loadPlan, loadRecipes]);
 
   const handlePrevWeek = () => {
     setCurrentWeek(addDays(currentWeek, -7));
@@ -300,7 +299,9 @@ function PlannerContent() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                meal.id && handleDeleteMeal(meal.id);
+                                if (meal.id) {
+                                  handleDeleteMeal(meal.id);
+                                }
                               }}
                               className="absolute top-1 right-1 p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
                             >

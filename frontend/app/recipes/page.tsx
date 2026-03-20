@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Heart, Search, Loader2, BookOpen } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -13,13 +13,8 @@ function RecipesContent() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRecipe, setSelectedRecipe] = useState<SavedRecipe | null>(null);
 
-  useEffect(() => {
-    loadRecipes();
-  }, [filter]);
-
-  const loadRecipes = async () => {
+  const loadRecipes = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.getSavedRecipes(filter === 'favorites');
@@ -31,7 +26,11 @@ function RecipesContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    loadRecipes();
+  }, [loadRecipes]);
 
   const handleToggleFavorite = async (id: string, isFavorite: boolean) => {
     try {
@@ -56,10 +55,6 @@ function RecipesContent() {
         console.error('Failed to delete recipe:', error);
       }
     }
-  };
-
-  const handleRecipeClick = (recipe: SavedRecipe) => {
-    setSelectedRecipe(recipe);
   };
 
   // Filter recipes by search query
@@ -170,7 +165,6 @@ function RecipesContent() {
               recipe={recipe}
               onToggleFavorite={handleToggleFavorite}
               onDelete={handleDelete}
-              onClick={handleRecipeClick}
             />
           ))}
         </div>
