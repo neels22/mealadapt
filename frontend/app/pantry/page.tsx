@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Sparkles, Loader2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PantryItem, RecipeSuggestionsResponse } from '@/lib/types';
 import RecipeSuggestions from '@/components/RecipeSuggestions';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const SAMPLE_INGREDIENTS = [
   'Chicken breast', 'Rice', 'Onion', 'Garlic', 'Tomatoes', 
@@ -19,6 +20,7 @@ export default function PantryPage() {
   const [suggestions, setSuggestions] = useState<RecipeSuggestionsResponse | null>(null);
   const [suggestingLoading, setSuggestingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     loadPantryItems();
@@ -66,8 +68,6 @@ export default function PantryPage() {
   };
 
   const handleClearPantry = async () => {
-    if (!confirm('Clear all items from your pantry?')) return;
-    
     try {
       await api.clearPantry();
       setItems([]);
@@ -76,6 +76,8 @@ export default function PantryPage() {
       if (process.env.NODE_ENV === 'development') {
         console.error('Failed to clear pantry:', err);
       }
+    } finally {
+      setShowClearConfirm(false);
     }
   };
 
@@ -156,7 +158,7 @@ export default function PantryPage() {
           </button>
           {items.length > 0 && (
             <button
-              onClick={handleClearPantry}
+              onClick={() => setShowClearConfirm(true)}
               className="text-sm text-red-600 hover:text-red-700 px-3"
             >
               Clear All
@@ -241,6 +243,17 @@ export default function PantryPage() {
       <p className="text-center text-xs text-[var(--text-secondary)]">
         ✨ Powered by LLM
       </p>
+
+      {showClearConfirm && (
+        <ConfirmDialog
+          title="Clear Pantry"
+          message="Are you sure you want to remove all items from your pantry? This cannot be undone."
+          confirmLabel="Clear All"
+          variant="danger"
+          onConfirm={handleClearPantry}
+          onCancel={() => setShowClearConfirm(false)}
+        />
+      )}
     </div>
   );
 }
