@@ -1,8 +1,10 @@
 'use client';
+import { memo } from 'react';
+
 
 import { useApiHealth } from '@/hooks/useApiHealth';
 
-export default function ApiStatusCard() {
+function ApiStatusCard() {
   const { health, loading, error, refresh } = useApiHealth();
 
   if (loading) {
@@ -37,3 +39,5 @@ export default function ApiStatusCard() {
     </div>
   );
 }
+
+export default memo(ApiStatusCard);
