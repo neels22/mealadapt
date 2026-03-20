@@ -1,4 +1,6 @@
 'use client';
+import { memo } from 'react';
+
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
@@ -27,7 +29,7 @@ const ROLE_EMOJI: Record<Role, string> = {
   [Role.BABY]: '👶',
 };
 
-export default function MemberCard({ member, onUpdate, onDelete }: Props) {
+function MemberCard({ member, onUpdate, onDelete }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [newCustomCondition, setNewCustomCondition] = useState('');
 
@@ -249,3 +251,5 @@ export default function MemberCard({ member, onUpdate, onDelete }: Props) {
     </div>
   );
 }
+
+export default memo(MemberCard);
