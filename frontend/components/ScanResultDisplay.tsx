@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { ScanResult } from '@/lib/types';
 import { CheckCircle2, AlertTriangle, XCircle, ShieldCheck, ShieldAlert } from 'lucide-react';
 
@@ -35,7 +36,7 @@ const SEVERITY_COLORS = {
   high: 'bg-red-100 text-red-800'
 };
 
-export default function ScanResultDisplay({ result }: Props) {
+function ScanResultDisplay({ result }: Props) {
   const safetyConfig = SAFETY_CONFIG[result.overall_safety as keyof typeof SAFETY_CONFIG] || SAFETY_CONFIG.caution;
   const SafetyIcon = safetyConfig.icon;
 
@@ -136,3 +137,5 @@ export default function ScanResultDisplay({ result }: Props) {
     </div>
   );
 }
+
+export default memo(ScanResultDisplay);
