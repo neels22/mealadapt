@@ -6,6 +6,7 @@ import { Search, Camera, Cookie, BookOpen, ShoppingCart, CalendarDays } from 'lu
 import FamilyProfile from '@/components/FamilyProfile';
 import UserMenu from '@/components/UserMenu';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ApiStatusCard from '@/components/ApiStatusCard';
 import { api } from '@/lib/api';
 import { FamilyProfile as FamilyProfileType } from '@/lib/types';
 import { useAuth } from '@/components/AuthProvider';
@@ -73,6 +74,8 @@ function HomeContent() {
           </div>
         </div>
       </Link>
+
+      <ApiStatusCard />
 
       {/* Action Cards Grid */}
       <div className="grid grid-cols-2 gap-6 mt-4">
